@@ -2,11 +2,12 @@ import { ReceiptData } from "../types";
 
 export const printViaBluetooth = async (data: ReceiptData) => {
   try {
-     if (!navigator.bluetooth) {
+     const nav = navigator as any;
+     if (!nav.bluetooth) {
          throw new Error("Web Bluetooth tidak didukung. Gunakan Chrome di Android.");
      }
 
-     const device = await navigator.bluetooth.requestDevice({
+     const device = await nav.bluetooth.requestDevice({
        acceptAllDevices: true,
        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '0000e781-0000-1000-8000-00805f9b34fb', '4953544c-4a43-4e4c-5353-445054323232']
      });

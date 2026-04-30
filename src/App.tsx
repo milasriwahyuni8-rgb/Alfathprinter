@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { parseReceipt } from './services/gemini';
 import { printViaBluetooth } from './services/bluetooth';
 import { ReceiptData } from './types';
 import { ReceiptPreview } from './components/ReceiptPreview';
-import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft } from 'lucide-react';
+import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download } from 'lucide-react';
 
 const INITIAL_DATA: ReceiptData = {
   namaToko: 'ALFATHPRINT',
@@ -33,6 +33,25 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('standard');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const handleImageSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,6 +107,27 @@ export default function App() {
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start text-red-700 text-sm mb-2 animate-in fade-in">
                 <AlertCircle className="w-5 h-5 mr-2 shrink-0 mt-0.5" />
                 <p>{error}</p>
+              </div>
+            )}
+
+            {/* PWA Install Banner */}
+            {deferredPrompt && (
+              <div className="bg-indigo-600 p-4 rounded-2xl text-white flex items-center justify-between animate-in slide-in-from-top duration-500">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <Download className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">Instal Aplikasi</h3>
+                    <p className="text-[10px] text-indigo-100 italic">Lebih cepat & stabil di Android</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={handleInstallClick}
+                  className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-transform"
+                >
+                  INSTAL
+                </button>
               </div>
             )}
 
