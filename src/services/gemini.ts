@@ -2,7 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 
 function getAI(customKey?: string) {
   const apiKey = customKey || process.env.GEMINI_API_KEY;
-  return new GoogleGenAI({ apiKey });
+  if (!apiKey) throw new Error("API Key tidak ditemukan.");
+  return new GoogleGenAI(apiKey);
 }
 
 export async function parseReceiptFromBase64(base64Data: string, mimeType: string, customKey?: string) {
