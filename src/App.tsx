@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { parseReceipt, parseReceiptFromBase64 } from './services/gemini';
+import { parseReceipt, parseReceiptFromBase64, testGeminiKey } from './services/gemini';
 import { scanReceiptLocally } from './services/localOcr';
 import { printViaBluetooth } from './services/bluetooth';
 import { ReceiptData, HistoryEntry } from './types';
@@ -8,7 +8,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { auth, db, loginWithGoogle, logout } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, setDoc as firestoreSetDoc, addDoc } from 'firebase/firestore';
-import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert } from 'lucide-react';
+import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert, Key, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const INITIAL_DATA: ReceiptData = {
@@ -57,6 +57,23 @@ export default function App() {
   const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('pro');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [keyStatus, setKeyStatus] = useState<'none' | 'valid' | 'invalid'>(data.customApiKey ? 'valid' : 'none');
+
+  const testApiKey = async () => {
+    if (!data.customApiKey) return;
+    setIsTestingKey(true);
+    try {
+      await testGeminiKey(data.customApiKey);
+      setKeyStatus('valid');
+      alert("✅ API Key Valid! AI sekarang akan menggunakan kuota Anda.");
+    } catch (err: any) {
+      setKeyStatus('invalid');
+      alert("❌ " + err.message);
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -161,9 +178,10 @@ export default function App() {
           setView('preview');
         } catch (err: any) {
           console.error("Shared content error:", err);
-          const isQuota = err.message?.includes('quota') || err.message?.includes('429');
+          const isQuota = err.message?.toLowerCase().includes('quota') || err.message?.includes('429');
+          const isInvalidKey = err.message?.includes('API Key');
           
-          if (isQuota && data.useFallbackAI) {
+          if ((isQuota || isInvalidKey) && data.useFallbackAI) {
             // Fallback to manual entry if AI fails
             setData(prev => ({
               ...prev,
@@ -177,11 +195,9 @@ export default function App() {
               admin: 0,
             }));
             setView('preview');
-            setError("Batas AI habis, silakan isi data secara manual.");
-          } else if (isQuota) {
-            setError("Batas pemrosesan AI hari ini sudah habis. Silakan coba lagi besok atau input manual.");
+            setError(err.message || "Batas AI habis, silakan isi data secara manual.");
           } else {
-            setError("Gagal memproses gambar yang dibagikan.");
+            setError(err.message || "Gagal memproses data share");
           }
         } finally {
           setIsLoading(false);
@@ -389,8 +405,10 @@ export default function App() {
       }));
       setView('preview');
     } catch (err: any) {
-      const isQuota = err.message?.includes('quota') || err.message?.includes('429');
-      if (isQuota && data.useFallbackAI) {
+      const isQuota = err.message?.toLowerCase().includes('quota') || err.message?.includes('429');
+      const isInvalidKey = err.message?.includes('API Key');
+      
+      if ((isQuota || isInvalidKey) && data.useFallbackAI) {
         setData(prev => ({
           ...prev,
           tanggal: new Date().toISOString().split('T')[0],
@@ -400,7 +418,7 @@ export default function App() {
           nominal: 0,
         }));
         setView('preview');
-        setError("AI Limit: Silakan isi data secara manual.");
+        setError(err.message || "AI Limit: Silakan isi data secara manual.");
       } else {
         setError(err.message || "Gagal memproses gambar. Pastikan gambar jelas.");
       }
@@ -900,15 +918,31 @@ export default function App() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Gemini API Key</label>
-                  <input 
-                    type="password" 
-                    value={data.customApiKey || ''}
-                    onChange={(e) => saveSettings({ customApiKey: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="Pindahkan API Key Anda di sini..."
-                  />
+                  <div className="relative">
+                    <input 
+                      type="password" 
+                      value={data.customApiKey || ''}
+                      onChange={(e) => {
+                        saveSettings({ customApiKey: e.target.value });
+                        setKeyStatus('none');
+                      }}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12"
+                      placeholder="Pindahkan API Key Anda di sini..."
+                    />
+                    {data.customApiKey && (
+                      <button 
+                        onClick={testApiKey}
+                        disabled={isTestingKey}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-600 hover:bg-white rounded-lg transition-colors"
+                      >
+                        {isTestingKey ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
                   <p className="text-[9px] text-slate-400 mt-2 leading-relaxed">
-                    Kunci ini disimpan <span className="text-emerald-600 font-bold italic">hanya di HP Anda</span>. Dengan menggunakan kunci sendiri, Anda tidak akan terkena limit pemakaian AI aplikasi ini.
+                    Kunci ini disimpan <span className="text-emerald-600 font-bold italic">hanya di HP Anda</span>. 
+                    {keyStatus === 'valid' && <span className="text-emerald-500 font-bold ml-1">✓ Aktif & Terhubung</span>}
+                    {keyStatus === 'invalid' && <span className="text-red-500 font-bold ml-1">✗ Key Salah/Bermasalah</span>}
                   </p>
                 </div>
               </div>

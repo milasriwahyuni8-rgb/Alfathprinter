@@ -9,7 +9,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   try {
     const ai = getAI(customKey);
     const result = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash", // Menggunakan model yang lebih stabil untuk Free Tier
       contents: {
         parts: [
           { text: `Ekstrak data transaksi dari gambar bukti transfer bank ini secara akurat.
@@ -39,7 +39,26 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
     return JSON.parse(result.text || "{}");
   } catch (error: any) {
     console.error("Gemini Error:", error);
+    if (error.message?.includes('API_KEY_INVALID')) {
+      throw new Error("API Key Anda tidak valid. Periksa kembali di Google AI Studio.");
+    }
+    if (error.message?.includes('quota') || error.message?.includes('429')) {
+      throw new Error("Limit tercapai! Akun Google Anda (Free Tier) sudah mencapai batas permintaan per menit.");
+    }
     throw new Error(error.message || "Gagal memproses gambar struk.");
+  }
+}
+
+export async function testGeminiKey(customKey: string) {
+  try {
+    const ai = getAI(customKey);
+    const result = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: { parts: [{ text: "hi" }] }
+    });
+    return !!result.text;
+  } catch (error: any) {
+    throw new Error(error.message || "Koneksi gagal");
   }
 }
 
