@@ -28,7 +28,7 @@ const LAYOUTS = [
 ] as const;
 
 export default function App() {
-  const [view, setView] = useState<'home' | 'preview'>('home');
+  const [view, setView] = useState<'home' | 'preview' | 'settings'>('home');
   const [data, setData] = useState<ReceiptData>(INITIAL_DATA);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,16 +36,66 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
+  // Load saved settings on mount
   useEffect(() => {
-// ... (deferredPrompt logic)
+    const savedSettings = localStorage.getItem('alfathprint_settings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setData(prev => ({
+        ...prev,
+        namaToko: settings.namaToko || prev.namaToko,
+        footerLine1: settings.footerLine1 || prev.footerLine1,
+        footerLine2: settings.footerLine2 || prev.footerLine2,
+        logoUrl: settings.logoUrl || prev.logoUrl,
+      }));
+    }
+
     const handler = (e: any) => {
-// ...
       e.preventDefault();
       setDeferredPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  const saveSettings = (updatedData: Partial<ReceiptData>) => {
+    const newSettings = {
+      namaToko: updatedData.namaToko || data.namaToko,
+      footerLine1: updatedData.footerLine1 || data.footerLine1,
+      footerLine2: updatedData.footerLine2 || data.footerLine2,
+      logoUrl: updatedData.logoUrl || data.logoUrl,
+    };
+    localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
+    setData(prev => ({ ...prev, ...updatedData }));
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        saveSettings({ logoUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const testBluetooth = async () => {
+    setIsPrinting(true);
+    try {
+      await printViaBluetooth({
+        ...data,
+        namaToko: "TES KONEKSI",
+        status: "PRINTER SIAP!",
+        nominal: 0,
+        admin: 0,
+        namaPenerima: "TESTER",
+        bankTujuan: "BLUETOOTH",
+        kodeReferensi: "OK-123"
+      });
+    } catch (err) {}
+    finally { setIsPrinting(false); }
+  };
 
   const handleInstallClick = async () => {
 // ...
@@ -107,8 +157,13 @@ export default function App() {
               <Printer className="w-8 h-8 text-neutral-700" />
               <h1 className="text-3xl font-black italic tracking-tighter text-neutral-800 uppercase">Alfathprint</h1>
             </div>
-            <div className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-emerald-100">
-               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online
+            <div className="flex gap-2">
+              <button onClick={testBluetooth} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                <Bluetooth className="w-6 h-6" />
+              </button>
+              <button onClick={() => setView('settings')} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                <Settings className="w-6 h-6" />
+              </button>
             </div>
           </header>
 
@@ -217,20 +272,105 @@ export default function App() {
 
           {/* Bottom Navigation */}
           <div className="bg-white border-t border-slate-200 p-2 fixed bottom-0 left-0 right-0 z-20 flex justify-around items-center no-print pb-safe">
-             <button className="flex flex-col items-center gap-1 p-2 w-16 text-indigo-600">
+             <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 p-2 w-16 ${view === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>
                <Home className="w-6 h-6" />
-               <span className="text-[10px] font-semibold">Beranda</span>
+               <span className="text-[10px] font-black uppercase">Home</span>
              </button>
-             <button className="flex flex-col items-center gap-1 p-2 w-16 text-slate-400 hover:text-slate-600">
-               <Printer className="w-6 h-6" />
-               <span className="text-[10px] font-semibold">Printer</span>
+             <button onClick={testBluetooth} className="flex flex-col items-center gap-1 p-2 w-16 text-slate-400 hover:text-slate-600">
+               <Bluetooth className="w-6 h-6" />
+               <span className="text-[10px] font-black uppercase">Printer</span>
              </button>
-             <button className="flex flex-col items-center gap-1 p-2 w-16 text-slate-400 hover:text-slate-600">
+             <button onClick={() => setView('settings')} className={`flex flex-col items-center gap-1 p-2 w-16 ${view === 'settings' ? 'text-indigo-600' : 'text-slate-400'}`}>
                <Settings className="w-6 h-6" />
-               <span className="text-[10px] font-semibold">Setelan</span>
+               <span className="text-[10px] font-black uppercase">Setting</span>
              </button>
           </div>
         </>
+      ) : view === 'settings' ? (
+        // --- SETTINGS SCREEN ---
+        <div className="flex flex-col h-[100dvh] bg-white no-print">
+          <header className="px-5 py-6 flex items-center gap-4">
+            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Pengaturan</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Kustomisasi Struk & Toko</p>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto px-5 space-y-8 pb-10">
+            {/* Logo Settings */}
+            <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100 text-center">
+              <div className="w-24 h-24 bg-white rounded-2xl mx-auto mb-4 border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm relative group">
+                {data.logoUrl ? (
+                  <img src={data.logoUrl} alt="Store Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <ImagePlus className="w-10 h-10 text-slate-200" />
+                )}
+              </div>
+              <label className="bg-white border border-slate-200 px-6 py-3 rounded-2xl text-xs font-black text-slate-700 cursor-pointer hover:bg-white active:bg-slate-50 shadow-sm inline-block transition-colors">
+                GANTI LOGO STRUK
+                <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+              </label>
+              {data.logoUrl && (
+                <button 
+                  onClick={() => saveSettings({ logoUrl: undefined })}
+                  className="block mx-auto mt-3 text-[10px] font-black text-rose-500 hover:underline uppercase tracking-widest"
+                >
+                  Hapus Logo
+                </button>
+              )}
+            </div>
+
+            {/* Shop Info */}
+            <div className="space-y-5">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Profil Toko</h3>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Toko</label>
+                <input 
+                  type="text" 
+                  value={data.namaToko}
+                  onChange={(e) => saveSettings({ namaToko: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  placeholder="Contoh: ALFATHPRINT"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Teks Bawah 1</label>
+                <input 
+                  type="text" 
+                  value={data.footerLine1}
+                  onChange={(e) => saveSettings({ footerLine1: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Teks Bawah 2</label>
+                <input 
+                  type="text" 
+                  value={data.footerLine2}
+                  onChange={(e) => saveSettings({ footerLine2: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Bluetooth Test Section */}
+            <div className="pt-4 border-t border-slate-50">
+               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Pengujian Perangkat</h3>
+               <button 
+                  onClick={testBluetooth}
+                  disabled={isPrinting}
+                  className="w-full bg-neutral-900 active:bg-black text-white py-5 rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-colors shadow-xl"
+                >
+                  {isPrinting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Bluetooth className="w-5 h-5" />}
+                  TES CETAK BLUETOOTH
+                </button>
+                <p className="text-[10px] text-slate-400 text-center mt-4 font-medium italic">Pastikan izin Bluetooth sudah diberikan ke browser.</p>
+            </div>
+          </div>
+        </div>
       ) : (
         // --- PREVIEW SCREEN ---
         <>

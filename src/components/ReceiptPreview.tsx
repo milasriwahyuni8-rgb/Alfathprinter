@@ -337,6 +337,11 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
     <div className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl p-6 text-[12px] leading-[1.3] text-black border-t-8 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} style={{ fontFamily }}>
       
       <div className="receipt-content flex flex-col gap-[2px] relative z-10 bg-white">
+        {data.logoUrl && (
+          <div className="flex justify-center mb-4 no-print-logo">
+            <img src={data.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+          </div>
+        )}
         {layout === 'standard' && renderStandard()}
         {layout === 'modern' && renderModern()}
         {layout === 'bank' && renderBank()}

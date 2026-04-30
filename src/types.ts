@@ -1,5 +1,6 @@
 export interface ReceiptData {
   namaToko: string;
+  logoUrl?: string; // Tambahan logo
   tanggal: string;
   waktu: string;
   kodeReferensi: string;
