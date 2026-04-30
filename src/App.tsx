@@ -183,11 +183,10 @@ export default function App() {
 
   useEffect(() => {
     const handler = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(true);
     };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('pwa-installable', handler);
+    return () => window.removeEventListener('pwa-installable', handler);
   }, []);
 
   const saveSettings = (updatedData: Partial<ReceiptData>) => {
@@ -216,9 +215,9 @@ export default function App() {
       const localHistory = JSON.parse(localStorage.getItem('alfathprint_history') || '[]');
       const newHistory = [entry, ...localHistory].slice(0, 50);
       localStorage.setItem('alfathprint_history', JSON.stringify(newHistory));
-      if (!userProfile?.branchId) {
-        setHistory(newHistory);
-      }
+      
+      // Update state immediately for everyone
+      setHistory(newHistory);
     } catch (e) {
       console.error("Local history error:", e);
     }
@@ -274,11 +273,8 @@ export default function App() {
   };
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
+    if ((window as any).promptPWAInstall) {
+      await (window as any).promptPWAInstall();
     }
   };
 

@@ -73,20 +73,19 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
      steps.push(u(esc.left));
      
      if (layout === 'elegant') {
-        steps.push(line(`Date: ${data.tanggal}`), line(`Time: ${data.waktu}`), line(`Ref : ${data.kodeReferensi}`), line('--------------------------------'));
+        steps.push(line(''), line(`Date: ${data.tanggal}`), line(`Time: ${data.waktu}`), line(`Ref : ${data.kodeReferensi}`), line('--------------------------------'));
         if (data.showPengirim) {
-           steps.push(u(esc.bold), line(`SENDER: ${data.namaPengirim}`), u(esc.boldOff));
+           steps.push(u(esc.bold), line(`SENDER`), u(esc.boldOff), line(`${data.namaPengirim}`));
         }
-        steps.push(line(`TO    : ${data.namaPenerima}`));
-        steps.push(line(`BANK  : ${data.bankTujuan}`));
-        steps.push(line(`ACC   : ${data.noRekening}`));
+        steps.push(u(esc.bold), line(`RECIPIENT`), u(esc.boldOff), line(`${data.namaPenerima}`));
+        steps.push(u(esc.bold), line(`DESTINATION`), u(esc.boldOff), line(`${data.bankTujuan} | ${data.noRekening}`));
      } else if (layout === 'modern' || layout === 'bank') {
         steps.push(line(`${data.tanggal} ${data.waktu}`), line(`NO REF: ${data.kodeReferensi}`), line('--------------------------------'));
         if (data.showPengirim) {
-           steps.push(line(`PENGIRIM: ${data.namaPengirim}`));
+           steps.push(u(esc.bold), line(`PENGIRIM: ${data.namaPengirim}`), u(esc.boldOff));
         }
-        steps.push(line(`PENERIMA: ${data.namaPenerima}`));
-        steps.push(line(`TUJUAN  : ${data.bankTujuan}`));
+        steps.push(u(esc.bold), line(`PENERIMA: ${data.namaPenerima}`), u(esc.boldOff));
+        steps.push(line(`BANK    : ${data.bankTujuan}`));
         steps.push(line(`REKENING: ${data.noRekening}`));
      } else {
         steps.push(line(`TGL: ${data.tanggal}`), line(`JAM: ${data.waktu}`), line(`REF: ${data.kodeReferensi}`), line('--------------------------------'));
