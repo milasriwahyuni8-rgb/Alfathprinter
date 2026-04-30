@@ -87,7 +87,20 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         {'-'.repeat(32)}
       </div>
 
-      <div className="text-center mb-1 select-none font-bold pt-1">DATA PENERIMA</div>
+      <div className="text-center mb-1 select-none font-bold">
+        {'-'.repeat(32)}
+      </div>
+
+      {data.showPengirim && (
+        <div className="w-full flex justify-between items-center gap-1">
+          <span className="shrink-0 whitespace-nowrap select-none uppercase">PENGIRIM</span>
+          <div className="flex-1 w-full overflow-hidden">
+            <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="right" />
+          </div>
+        </div>
+      )}
+
+      <div className="text-center select-none font-bold pt-1 uppercase">DATA PENERIMA</div>
       <div className="w-full flex justify-between items-center gap-1">
          <span className="shrink-0 whitespace-nowrap select-none">BANK TUJUAN</span>
          <div className="flex-1 w-full overflow-hidden">
@@ -184,6 +197,15 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         </div>
       </div>
 
+      {data.showPengirim && (
+        <div className="flex items-center gap-2 font-bold mb-2">
+          <span className="shrink-0 w-20 select-none">PENGIRIM</span>
+          <div className="flex-1">
+             <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="right" isBold uppercase />
+          </div>
+        </div>
+      )}
+
       <div className="font-bold mb-1 uppercase">KEPADA:</div>
       <div className="flex items-center gap-2 font-bold">
          <span className="shrink-0 w-20 select-none">PENERIMA</span>
@@ -266,6 +288,16 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
            <InlineInput value={data.kodeReferensi} onChange={v => onChange({...data, kodeReferensi: v})} align="left" isBold uppercase />
          </div>
       </div>
+
+      {data.showPengirim && (
+        <div className="flex items-center font-bold">
+           <span className="shrink-0 w-[120px] select-none">PENGIRIM</span>
+           <span className="select-none mr-2">:</span>
+           <div className="flex-1">
+             <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="left" isBold uppercase />
+           </div>
+        </div>
+      )}
 
       <div className="flex items-center font-bold">
          <span className="shrink-0 w-[120px] select-none">TRANSAKSI</span>

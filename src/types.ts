@@ -21,4 +21,6 @@ export interface ReceiptData {
   footerLine1: string;
   footerLine2: string;
   tid: string;
+  namaPengirim?: string;
+  showPengirim?: boolean;
 }

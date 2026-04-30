@@ -23,6 +23,8 @@ const INITIAL_DATA: ReceiptData = {
   footerLine1: 'SALINAN - VIA ALFATHPRINT APP',
   footerLine2: 'TERIMA KASIH',
   tid: 'NK-000',
+  namaPengirim: '-',
+  showPengirim: false,
 };
 
 const LAYOUTS = [
@@ -97,6 +99,8 @@ export default function App() {
           footerLine1: settings.footerLine1 || prev.footerLine1,
           footerLine2: settings.footerLine2 || prev.footerLine2,
           logoUrl: settings.logoUrl || prev.logoUrl,
+          namaPengirim: settings.namaPengirim || prev.namaPengirim,
+          showPengirim: settings.showPengirim !== undefined ? settings.showPengirim : prev.showPengirim,
         }));
       }
     } catch (e) {
@@ -140,6 +144,8 @@ export default function App() {
       footerLine1: updatedData.footerLine1 || data.footerLine1,
       footerLine2: updatedData.footerLine2 || data.footerLine2,
       logoUrl: updatedData.logoUrl || data.logoUrl,
+      namaPengirim: updatedData.namaPengirim !== undefined ? updatedData.namaPengirim : data.namaPengirim,
+      showPengirim: updatedData.showPengirim !== undefined ? updatedData.showPengirim : data.showPengirim,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...updatedData }));
@@ -160,6 +166,8 @@ export default function App() {
         nominal: receipt.nominal || 0,
         namaPenerima: receipt.namaPenerima || 'Tanpa Nama',
         bankTujuan: receipt.bankTujuan || 'Lainnya',
+        namaPengirim: receipt.namaPengirim || '',
+        showPengirim: receipt.showPengirim || false,
         receiptData: receipt
       });
     } catch (err) {
@@ -547,6 +555,30 @@ export default function App() {
                   className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 />
               </div>
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div>
+                  <span className="text-sm font-bold text-slate-800">Tampilkan Pengirim</span>
+                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Muncul di struk cetak</p>
+                </div>
+                <button 
+                  onClick={() => saveSettings({ showPengirim: !data.showPengirim })}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${data.showPengirim ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.showPengirim ? 'left-7' : 'left-1'}`}></div>
+                </button>
+              </div>
+              {data.showPengirim && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Pengirim (Default)</label>
+                  <input 
+                    type="text" 
+                    value={data.namaPengirim || ''}
+                    onChange={(e) => saveSettings({ namaPengirim: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="Contoh: AGEN BERKAH"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Bluetooth Test Section */}
