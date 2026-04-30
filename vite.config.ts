@@ -38,7 +38,7 @@ export default defineConfig(({mode}) => {
             }
           ],
           share_target: {
-            action: "/share-target",
+            action: "/share-receiver",
             method: "POST",
             enctype: "multipart/form-data",
             params: {

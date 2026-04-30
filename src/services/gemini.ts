@@ -16,7 +16,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
             - bankTujuan (nama bank tujuan transfer)
             - noRekening (nomor rekening penerima)
             - namaPenerima (nama lengkap penerima)
-            - nominal (angka murni, ambil dari "Jumlah", "Total", "Nominal Transfer", "Jumlah Bayar", atau "Total Transfer")
+            - nominal (angka murni, ambil dari "Jumlah", "Total", "Nominal Transfer", "Jumlah Bayar", "Total Bayar", atau "Total Transfer")
 
             Pastikan nominal adalah angka bulat tanpa simbol mata uang. Abaikan biaya admin jika tertulis terpisah.` },
           {

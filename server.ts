@@ -24,29 +24,26 @@ async function startServer() {
   app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
   // Web Share Target Handler
-  app.post("/share-target", upload.single('receipt'), (req: any, res) => {
-    console.log("Receive share-target request");
+  app.all("/share-receiver", (req, res, next) => {
+    console.log(`Share receiver hit: ${req.method} ${req.url}`);
+    if (req.method === 'GET') {
+      return res.redirect("/");
+    }
+    next();
+  }, upload.single('receipt'), (req: any, res) => {
+    console.log("Processing shared file...");
     if (!req.file) {
-      console.log("No file received in share-target");
+      console.log("No file found in share-receiver request");
       return res.redirect("/");
     }
     
-    console.log(`File received: ${req.file.originalname}, size: ${req.file.size}`);
     const sharedId = Math.random().toString(36).substring(2, 11);
     sharedContents.set(sharedId, {
       buffer: req.file.buffer,
       mimetype: req.file.mimetype
     });
     
-    // Clean up after 5 minutes to allow more time for app to load and auth
-    setTimeout(() => {
-      if (sharedContents.has(sharedId)) {
-        console.log(`Cleaning up shared content ${sharedId}`);
-        sharedContents.delete(sharedId);
-      }
-    }, 300000);
-    
-    console.log(`Redirecting to /?sharedId=${sharedId}`);
+    setTimeout(() => sharedContents.delete(sharedId), 300000);
     res.redirect(303, `/?sharedId=${sharedId}`);
   });
 
