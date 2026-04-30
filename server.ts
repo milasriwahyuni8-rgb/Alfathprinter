@@ -50,42 +50,6 @@ async function startServer() {
     });
   });
 
-  // API Route for AI Parsing
-  app.post("/api/parse-receipt", async (req, res) => {
-    try {
-      const { base64Data, mimeType } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY;
-
-      if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server." });
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            { text: "Ekstrak data JSON dari struk ini. Format: {tanggal, waktu, kodeReferensi, bankTujuan, noRekening, namaPenerima, nominal}" },
-            {
-              inlineData: {
-                data: base64Data.split(",")[1],
-                mimeType: mimeType
-              }
-            }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json",
-        }
-      });
-
-      res.json(JSON.parse(result.text || "{}"));
-    } catch (error: any) {
-      console.error("AI Error:", error);
-      res.status(500).json({ error: error.message || "Gagal memproses gambar." });
-    }
-  });
-
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

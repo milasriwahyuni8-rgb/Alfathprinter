@@ -552,7 +552,7 @@ export default function App() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Toko</label>
                   <input 
                     type="text" 
-                    value={data.namaToko}
+                    value={data.namaToko || ''}
                     onChange={(e) => saveSettings({ namaToko: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     placeholder="Contoh: ALFATHPRINT"
@@ -573,7 +573,7 @@ export default function App() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Teks Bawah 1</label>
                 <input 
                   type="text" 
-                  value={data.footerLine1}
+                  value={data.footerLine1 || ''}
                   onChange={(e) => saveSettings({ footerLine1: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 />
@@ -582,7 +582,7 @@ export default function App() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Teks Bawah 2</label>
                 <input 
                   type="text" 
-                  value={data.footerLine2}
+                  value={data.footerLine2 || ''}
                   onChange={(e) => saveSettings({ footerLine2: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 />
@@ -625,6 +625,19 @@ export default function App() {
                   TES CETAK BLUETOOTH
                 </button>
                 <p className="text-[10px] text-slate-400 text-center mt-4 font-medium italic">Pastikan izin Bluetooth sudah diberikan ke browser.</p>
+            </div>
+
+            {/* PWA Help Section */}
+            <div className="bg-indigo-900/5 p-5 rounded-3xl border border-indigo-100 mb-4">
+              <h3 className="text-sm font-black text-indigo-900 mb-2 uppercase italic">Tips "Share ke Aplikasi"</h3>
+              <p className="text-[11px] text-indigo-700/70 leading-relaxed font-medium">
+                Agar nama <span className="font-bold">Alfathprint</span> muncul saat Anda klik "Share" di aplikasi Bank:
+              </p>
+              <ul className="mt-2 space-y-1 text-[10px] text-indigo-800 font-bold list-disc ml-4">
+                <li>Klik tombol menu (titik tiga) di browser Chrome Anda.</li>
+                <li>Pilih <span className="text-indigo-600">"Instal Aplikasi"</span> atau <span className="text-indigo-600">"Tambahkan ke Layar Utama"</span>.</li>
+                <li>Setelah terinstal, buka Alfathprint dari layar HP Anda, bukan dari browser lagi.</li>
+              </ul>
             </div>
 
             {/* Admin Area Button (Settings) */}

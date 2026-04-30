@@ -1,21 +1,32 @@
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
 export async function parseReceiptFromBase64(base64Data: string, mimeType: string) {
-  const response = await fetch("/api/parse-receipt", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      base64Data,
-      mimeType,
-    }),
-  });
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: {
+        parts: [
+          { text: "Ekstrak data JSON dari struk ini. Format: {tanggal, waktu, kodeReferensi, bankTujuan, noRekening, namaPenerima, nominal}" },
+          {
+            inlineData: {
+              data: base64Data.split(",")[1],
+              mimeType: mimeType
+            }
+          }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || "Gagal memproses gambar melalui server.");
+    return JSON.parse(result.text || "{}");
+  } catch (error: any) {
+    console.error("Gemini Error:", error);
+    throw new Error(error.message || "Gagal memproses gambar struk.");
   }
-
-  return response.json();
 }
 
 export async function parseReceipt(file: File) {
