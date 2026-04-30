@@ -148,11 +148,11 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-[#f2f4f7] text-slate-800 font-sans overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-[#f2f4f7] text-slate-800 font-sans">
       
       {view === 'home' ? (
         // --- HOME SCREEN ---
-        <>
+        <div className="flex flex-col h-screen overflow-hidden">
           {/* Header */}
           <header className="bg-[#f2f4f7] px-5 py-4 flex items-center justify-between shrink-0 no-print">
             <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function App() {
           </header>
 
           {/* Main Scrollable Area */}
-          <div className="flex-1 overflow-y-auto px-5 pb-24 no-print flex flex-col gap-4">
+          <div className="flex-1 overflow-y-auto px-5 pb-32 no-print flex flex-col gap-4 overscroll-contain touch-pan-y">
             
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start text-red-700 text-sm mb-2 animate-in fade-in">
@@ -287,11 +287,11 @@ export default function App() {
                <span className="text-[10px] font-black uppercase">Setting</span>
              </button>
           </div>
-        </>
+        </div>
       ) : view === 'settings' ? (
         // --- SETTINGS SCREEN ---
-        <div className="flex flex-col h-[100dvh] bg-white no-print">
-          <header className="px-5 py-6 flex items-center gap-4">
+        <div className="flex flex-col h-screen bg-white no-print overflow-hidden">
+          <header className="px-5 py-6 flex items-center shrink-0 gap-4">
             <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500">
               <ArrowLeft className="w-6 h-6" />
             </button>
@@ -301,7 +301,7 @@ export default function App() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto px-5 space-y-8 pb-10">
+          <div className="flex-1 overflow-y-auto px-5 space-y-8 pb-10 overscroll-contain touch-pan-y">
             {/* Logo Settings */}
             <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100 text-center">
               <div className="w-24 h-24 bg-white rounded-2xl mx-auto mb-4 border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm relative group">
@@ -375,7 +375,7 @@ export default function App() {
         </div>
       ) : (
         // --- PREVIEW SCREEN ---
-        <>
+        <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f7]">
           <header className="bg-white shadow-sm border-b border-slate-200 px-4 py-3 flex items-center shrink-0 z-20 no-print relative">
             <button 
               onClick={() => setView('home')} 
@@ -386,7 +386,7 @@ export default function App() {
             <h1 className="text-lg font-bold tracking-tight text-center w-full">Preview Struk</h1>
           </header>
 
-          <div className="flex-1 overflow-y-auto no-print flex flex-col items-center bg-[#f2f4f7]">
+          <div className="flex-1 overflow-y-auto no-print flex flex-col items-center bg-[#f2f4f7] overscroll-contain touch-pan-y">
             <div className="w-full max-w-md mx-auto p-4 flex flex-col gap-6 pb-32">
               
               {/* Style Selector */}
@@ -420,7 +420,7 @@ export default function App() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="fixed bottom-0 left-0 right-0 bg-[#f2f4f7] px-4 pt-2 pb-6 shrink-0 no-print z-20 flex gap-3 max-w-md mx-auto w-full">
+          <div className="fixed bottom-0 left-0 right-0 bg-[#f2f4f7] px-4 pt-2 pb-6 pb-safe shrink-0 no-print z-20 flex gap-3 max-w-md mx-auto w-full">
             <button 
               onClick={handlePrintSystem}
               className="flex-none bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-sm"
@@ -446,7 +446,7 @@ export default function App() {
               )}
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {/* Print Only Container */}

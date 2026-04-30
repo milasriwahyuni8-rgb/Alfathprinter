@@ -46,8 +46,18 @@
 }
 
 html, body {
-  overscroll-behavior-y: contain;
-  touch-action: pan-x pan-y;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
 }
 
 .receipt-content {
