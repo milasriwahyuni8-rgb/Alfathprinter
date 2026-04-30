@@ -479,7 +479,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
 
       <div className="text-center mb-1">
         <div className="font-bold uppercase tracking-wider">KODE REFERENSI</div>
-        <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold />
+        <InlineInput value={data.kodeReferensi || '-'} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold />
       </div>
       <div className="text-center my-1 select-none font-bold">
         {'-'.repeat(32)}

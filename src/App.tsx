@@ -8,6 +8,7 @@ import { auth, db, loginWithGoogle, logout } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, setDoc as firestoreSetDoc, addDoc } from 'firebase/firestore';
 import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const INITIAL_DATA: ReceiptData = {
   namaToko: 'ALFATHPRINT',
@@ -121,6 +122,7 @@ export default function App() {
           setData(prev => ({
             ...prev,
             ...parsedData,
+            kodeReferensi: parsedData.kodeReferensi || '-',
             nominal: cleanNominal(parsedData.nominal),
             admin: 0, 
           }));
@@ -323,6 +325,7 @@ export default function App() {
       setData(prev => ({
         ...prev,
         ...parsedData,
+        kodeReferensi: parsedData.kodeReferensi || '-',
         nominal: cleanNominal(parsedData.nominal),
         admin: 0, 
       }));
@@ -423,6 +426,45 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f2f4f7] text-slate-800 font-sans">
+      
+      {/* Processing Overlay */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm px-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-xs w-full text-center"
+            >
+              <div className="relative">
+                <div className="w-20 h-20 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <Zap className="w-8 h-8 text-indigo-600 animate-pulse" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight italic">Analisis Gambar</h3>
+                <p className="text-sm text-slate-500 leading-relaxed font-medium">Kecerdasan Buatan (AI) sedang memproses data struk Anda...</p>
+              </div>
+              <div className="flex gap-1">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                    className="w-2 h-2 bg-indigo-600 rounded-full"
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {view === 'home' ? (
         // --- HOME SCREEN ---

@@ -68,7 +68,7 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         steps.push(line(lv('WAKTU', data.waktu)));
         steps.push(line('--------------------------------'));
         
-        steps.push(u(esc.center), line('KODE REFERENSI'), line(data.kodeReferensi), line('--------------------------------'), line(''));
+        steps.push(u(esc.center), line('KODE REFERENSI'), line(data.kodeReferensi || '-'), line('--------------------------------'), line(''));
         
         steps.push(line('DATA PENERIMA'));
         steps.push(u(esc.left), line(lv('BANK TUJUAN', data.bankTujuan.toUpperCase())));
