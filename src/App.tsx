@@ -34,9 +34,12 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('standard');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
+// ... (deferredPrompt logic)
     const handler = (e: any) => {
+// ...
       e.preventDefault();
       setDeferredPrompt(e);
     };
@@ -45,6 +48,7 @@ export default function App() {
   }, []);
 
   const handleInstallClick = async () => {
+// ...
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -54,6 +58,7 @@ export default function App() {
   };
 
   const handleImageSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+// ...
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -79,8 +84,15 @@ export default function App() {
     window.print();
   };
 
-  const handlePrintBT = () => {
-    printViaBluetooth(data);
+  const handlePrintBT = async () => {
+    setIsPrinting(true);
+    try {
+      await printViaBluetooth(data);
+    } catch (err) {
+      // Error handled in bluetooth service via alert
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   return (
@@ -267,14 +279,29 @@ export default function App() {
 
           {/* Bottom Action Bar */}
           <div className="fixed bottom-0 left-0 right-0 bg-[#f2f4f7] px-4 pt-2 pb-6 shrink-0 no-print z-20 flex gap-3 max-w-md mx-auto w-full">
-            <button className="flex-none bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-sm">
-              <Edit3 className="w-6 h-6" />
-            </button>
             <button 
               onClick={handlePrintSystem}
-              className="flex-1 bg-indigo-600 active:bg-indigo-700 text-white h-14 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-200 text-sm"
+              className="flex-none bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-sm"
+              title="Cetak Sistem (PDF/Awan)"
             >
-              CETAK SEKARANG
+              <FileText className="w-6 h-6" />
+            </button>
+            <button 
+              onClick={handlePrintBT}
+              disabled={isPrinting}
+              className="flex-1 bg-indigo-600 active:bg-indigo-700 disabled:bg-indigo-400 text-white h-14 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-200 text-sm"
+            >
+              {isPrinting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  MENGHUBUNGKAN...
+                </>
+              ) : (
+                <>
+                  <Bluetooth className="w-5 h-5" />
+                  CETAK LANGSUNG (BT)
+                </>
+              )}
             </button>
           </div>
         </>
