@@ -25,6 +25,7 @@ const INITIAL_DATA: ReceiptData = {
   tid: 'NK-000',
   namaPengirim: '-',
   showPengirim: false,
+  useFallbackAI: true,
 };
 
 const LAYOUTS = [
@@ -112,7 +113,24 @@ export default function App() {
           setView('preview');
         } catch (err: any) {
           console.error("Shared content error:", err);
-          if (err.message?.includes('quota') || err.message?.includes('429')) {
+          const isQuota = err.message?.includes('quota') || err.message?.includes('429');
+          
+          if (isQuota && data.useFallbackAI) {
+            // Fallback to manual entry if AI fails
+            setData(prev => ({
+              ...prev,
+              tanggal: new Date().toISOString().split('T')[0],
+              waktu: new Date().toTimeString().split(' ')[0],
+              kodeReferensi: 'ID-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+              bankTujuan: 'INPUT MANUAL',
+              noRekening: '-',
+              namaPenerima: 'EDIT NAMA DISINI',
+              nominal: 0,
+              admin: 0,
+            }));
+            setView('preview');
+            setError("Batas AI habis, silakan isi data secara manual.");
+          } else if (isQuota) {
             setError("Batas pemrosesan AI hari ini sudah habis. Silakan coba lagi besok atau input manual.");
           } else {
             setError("Gagal memproses gambar yang dibagikan.");
@@ -137,6 +155,7 @@ export default function App() {
           logoUrl: settings.logoUrl || prev.logoUrl,
           namaPengirim: settings.namaPengirim || prev.namaPengirim,
           showPengirim: settings.showPengirim !== undefined ? settings.showPengirim : prev.showPengirim,
+          useFallbackAI: settings.useFallbackAI !== undefined ? settings.useFallbackAI : prev.useFallbackAI,
         }));
       }
     } catch (e) {
@@ -198,6 +217,7 @@ export default function App() {
       logoUrl: updatedData.logoUrl || data.logoUrl,
       namaPengirim: updatedData.namaPengirim !== undefined ? updatedData.namaPengirim : data.namaPengirim,
       showPengirim: updatedData.showPengirim !== undefined ? updatedData.showPengirim : data.showPengirim,
+      useFallbackAI: updatedData.useFallbackAI !== undefined ? updatedData.useFallbackAI : data.useFallbackAI,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...updatedData }));
@@ -294,7 +314,21 @@ export default function App() {
       }));
       setView('preview');
     } catch (err: any) {
-      setError(err.message || "Gagal memproses gambar. Pastikan gambar jelas.");
+      const isQuota = err.message?.includes('quota') || err.message?.includes('429');
+      if (isQuota && data.useFallbackAI) {
+        setData(prev => ({
+          ...prev,
+          tanggal: new Date().toISOString().split('T')[0],
+          waktu: new Date().toTimeString().split(' ')[0],
+          kodeReferensi: 'ID-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+          namaPenerima: 'INPUT MANUAL',
+          nominal: 0,
+        }));
+        setView('preview');
+        setError("AI Limit: Silakan isi data secara manual.");
+      } else {
+        setError(err.message || "Gagal memproses gambar. Pastikan gambar jelas.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -645,6 +679,36 @@ export default function App() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* AI Settings */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Kecerdasan Buatan (AI)</h3>
+              <div 
+                className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors"
+                onClick={() => saveSettings({ useFallbackAI: !data.useFallbackAI })}
+              >
+                <div className="flex items-center gap-4">
+                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.useFallbackAI ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                     <Zap className="w-6 h-6" />
+                   </div>
+                   <div>
+                     <h4 className="font-bold text-slate-800 text-sm">Mode Cadangan AI</h4>
+                     <p className="text-[10px] text-slate-400 font-medium">Aktifkan input manual jika kuota AI habis</p>
+                   </div>
+                </div>
+                <div 
+                  className={`w-12 h-6 rounded-full transition-colors relative ${data.useFallbackAI ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.useFallbackAI ? 'left-7' : 'left-1'}`}></div>
+                </div>
+              </div>
+              <div className="p-4 bg-indigo-50 rounded-2xl flex gap-3 items-start border border-indigo-100">
+                <AlertCircle className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-indigo-800 leading-relaxed font-semibold">
+                   Jika kuota harian AI habis, sistem akan langsung membuka form pengisian manual agar Anda tetap bisa mencetak struk dengan cepat.
+                </p>
+              </div>
             </div>
 
             {/* Bluetooth Test Section */}

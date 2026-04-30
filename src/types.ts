@@ -9,7 +9,6 @@ export interface ReceiptData {
   cabang?: string;
   logoUrl?: string;
   tanggal: string;
-  // ... rest remains same
   waktu: string;
   kodeReferensi: string;
   bankTujuan: string;
@@ -23,4 +22,5 @@ export interface ReceiptData {
   tid: string;
   namaPengirim?: string;
   showPengirim?: boolean;
+  useFallbackAI?: boolean;
 }
