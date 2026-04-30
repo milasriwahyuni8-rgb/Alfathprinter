@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { parseReceipt } from './services/gemini';
+import { parseReceipt, parseReceiptFromBase64 } from './services/gemini';
 import { printViaBluetooth } from './services/bluetooth';
 import { ReceiptData, HistoryEntry } from './types';
 import { ReceiptPreview } from './components/ReceiptPreview';
@@ -88,6 +88,37 @@ export default function App() {
   useEffect(() => {
     if (!isAuthLoaded || !user) return;
     
+    // Check for shared image from Web Share Target
+    const params = new URLSearchParams(window.location.search);
+    const sharedId = params.get('sharedId');
+    if (sharedId) {
+      const fetchShared = async () => {
+        try {
+          setIsLoading(true);
+          const res = await fetch(`/api/shared/${sharedId}`);
+          if (!res.ok) throw new Error("Gagal mengambil data share");
+          const sharedData = await res.json();
+          // Remove param from URL
+          window.history.replaceState({}, document.title, "/");
+          
+          const parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType);
+          setData(prev => ({
+            ...prev,
+            ...parsedData,
+            nominal: Number(parsedData.nominal) || 0,
+            admin: 0, 
+          }));
+          setView('preview');
+        } catch (err) {
+          console.error("Shared content error:", err);
+          setError("Gagal memproses gambar yang dibagikan.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchShared();
+    }
+
     try {
       const savedSettings = localStorage.getItem('alfathprint_settings');
       if (savedSettings) {

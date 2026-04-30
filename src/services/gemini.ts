@@ -1,7 +1,4 @@
-export async function parseReceipt(file: File) {
-  const base64Data = await fileToBase64(file);
-  const mimeType = file.type;
-
+export async function parseReceiptFromBase64(base64Data: string, mimeType: string) {
   const response = await fetch("/api/parse-receipt", {
     method: "POST",
     headers: {
@@ -19,6 +16,12 @@ export async function parseReceipt(file: File) {
   }
 
   return response.json();
+}
+
+export async function parseReceipt(file: File) {
+  const base64Data = await fileToBase64(file);
+  const mimeType = file.type;
+  return parseReceiptFromBase64(base64Data, mimeType);
 }
 
 function fileToBase64(file: File): Promise<string> {

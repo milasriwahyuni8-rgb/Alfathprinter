@@ -20,31 +20,27 @@ const InlineInput = ({ value, onChange, align = 'left', isBold = false, uppercas
 );
 
 const InlineCurrencyInput = ({ value, onChange, align = 'right', isBold = false }: { value: number, onChange: (v: number) => void, align?: string, isBold?: boolean }) => {
-  const [focused, setFocused] = React.useState(false);
-  
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount).replace('Rp', 'Rp ');
+  const formatValue = (val: number | string) => {
+    if (!val && val !== 0) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(val));
   };
 
   return (
-    <input
-      type="text"
-      value={focused ? (value || '') : formatCurrency(value || 0)}
-      onChange={(e) => {
-         const val = Number(e.target.value.replace(/[^0-9]/g, ''));
-         onChange(val);
-      }}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      className={`bg-transparent outline-none border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:bg-white hover:bg-slate-50 rounded transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
-      style={{ textAlign: align as any, padding: '2px 4px', margin: '-2px -4px', width: 'calc(100% + 8px)' }}
-      spellCheck={false}
-    />
+    <div className="relative w-full flex items-center">
+      <span className="shrink-0 select-none mr-1">Rp</span>
+      <input
+        type="text"
+        value={formatValue(value)}
+        onChange={(e) => {
+           const rawValue = e.target.value.replace(/\./g, '');
+           const numericValue = parseInt(rawValue, 10);
+           onChange(isNaN(numericValue) ? 0 : numericValue);
+        }}
+        className={`bg-transparent outline-none border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:bg-white hover:bg-slate-50 rounded transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
+        style={{ textAlign: align as any, padding: '2px 4px', width: '100%' }}
+        spellCheck={false}
+      />
+    </div>
   );
 };
 
