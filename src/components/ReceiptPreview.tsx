@@ -69,14 +69,15 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
           <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
         </div>
       </div>
+      <div className="flex justify-between items-center gap-2">
+        <span className="shrink-0 select-none uppercase">REFERENSI</span>
+        <div className="flex-1">
+          <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="right" isBold />
+        </div>
+      </div>
       
       <div className="text-center my-1 select-none font-bold">
         {'-'.repeat(32)}
-      </div>
-
-      <div className="text-center select-none font-bold pt-1">KODE REFERENSI</div>
-      <div className="text-center break-all font-bold">
-         <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold />
       </div>
 
       <div className="text-center my-1 select-none font-bold">
@@ -186,8 +187,13 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         {'===================================='}
       </div>
 
+      <div className="flex justify-between items-center gap-2 text-[10px] mb-2 opacity-60">
+        <div><InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="left" /></div>
+        <div><InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" /></div>
+      </div>
+
       <div className="flex items-center gap-2 font-bold mb-4 mt-2">
-        <span className="shrink-0 select-none">REF</span>
+        <span className="shrink-0 select-none">NO REF:</span>
         <div className="flex-1">
            <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="left" isBold uppercase />
         </div>
@@ -262,18 +268,18 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
 
       <div className="flex items-center font-bold">
          <div className="flex-1">
-           <InlineInput value={data.tanggal + ' ' + data.waktu} onChange={v => {
-             const [t, w] = v.split(' ');
-             onChange({...data, tanggal: t || '', waktu: w || ''});
-           }} align="left" isBold uppercase />
+           <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="left" isBold uppercase />
+         </div>
+         <div className="flex-1">
+           <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" isBold uppercase />
          </div>
       </div>
       
       <div className="flex items-center font-bold">
-         <span className="shrink-0 w-[120px] select-none">TID TERMINAL</span>
+         <span className="shrink-0 w-[120px] select-none">ID REF</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={data.tid || ''} onChange={v => onChange({...data, tid: v})} align="left" isBold uppercase />
+           <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="left" isBold uppercase />
          </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { ReceiptData } from "../types";
 
-export const printViaBluetooth = async (data: ReceiptData) => {
+export const printViaBluetooth = async (data: ReceiptData, layout: string = 'standard') => {
   let device: any = null;
   try {
      const nav = navigator as any;
@@ -45,44 +45,63 @@ export const printViaBluetooth = async (data: ReceiptData) => {
         init: [0x1B, 0x40],
         center: [0x1B, 0x61, 1],
         left: [0x1B, 0x61, 0],
+        right: [0x1B, 0x61, 2],
         bold: [0x1B, 0x45, 1],
         boldOff: [0x1B, 0x45, 0],
         feed: [0x0A]
      };
 
      const u = (arr: number[]) => new Uint8Array(arr);
+     const line = (text: string) => encoder.encode(text + '\n');
 
-     // Urutan Cetak (Per Bagian)
-     const steps = [
-        u(esc.init),
-        u(esc.center),
-        u(esc.bold),
-        encoder.encode(`${data.namaToko}\n`),
-        u(esc.boldOff),
-        encoder.encode(`================================\n`),
-        u(esc.left),
-        encoder.encode(`TGL: ${data.tanggal} ${data.waktu}\n`),
-        encoder.encode(`REF: ${data.kodeReferensi}\n`),
-        encoder.encode(`--------------------------------\n`),
-        ...(data.showPengirim ? [encoder.encode(`Pengirim: ${data.namaPengirim}\n`)] : []),
-        encoder.encode(`Penerima: ${data.namaPenerima}\n`),
-        encoder.encode(`Bank    : ${data.bankTujuan}\n`),
-        encoder.encode(`Rekening: ${data.noRekening}\n`),
-        u(esc.bold),
-        encoder.encode(`NOMINAL : Rp ${data.nominal.toLocaleString('id-ID')}\n`),
-        u(esc.boldOff),
-        encoder.encode(`ADMIN   : Rp ${data.admin.toLocaleString('id-ID')}\n`),
-        encoder.encode(`--------------------------------\n`),
-        u(esc.bold),
-        encoder.encode(`TOTAL   : Rp ${(data.nominal + data.admin).toLocaleString('id-ID')}\n`),
-        u(esc.boldOff),
-        encoder.encode(`================================\n`),
-        u(esc.center),
-        encoder.encode(`${data.status}\n\n`),
-        encoder.encode(`${data.footerLine1}\n`),
-        encoder.encode(`${data.footerLine2}\n`),
-        u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed)
-     ];
+     let steps: Uint8Array[] = [u(esc.init)];
+
+     // --- Header ---
+     steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff));
+
+     if (layout === 'elegant') {
+        steps.push(line('--- OFFICIAL RECEIPT ---'), line(''));
+     } else if (layout === 'bank') {
+        steps.push(u(esc.bold), line('BUKTI TRANSAKSI'), u(esc.boldOff));
+     } else if (layout === 'modern') {
+        steps.push(line('================================'), u(esc.bold), line('BUKTI TRANSFER'), u(esc.boldOff), line('================================'));
+     } else {
+        steps.push(line('================================'));
+     }
+
+     // --- Body ---
+     steps.push(u(esc.left));
+     
+     if (layout === 'elegant') {
+        steps.push(line(`Date: ${data.tanggal}`), line(`Time: ${data.waktu}`), line(`Ref : ${data.kodeReferensi}`), line('--------------------------------'));
+     } else if (layout === 'modern' || layout === 'bank') {
+        steps.push(line(`${data.tanggal} ${data.waktu}`), line(`NO REF: ${data.kodeReferensi}`), line('--------------------------------'));
+     } else {
+        steps.push(line(`TGL: ${data.tanggal}`), line(`JAM: ${data.waktu}`), line(`REF: ${data.kodeReferensi}`), line('--------------------------------'));
+     }
+
+     if (data.showPengirim) {
+        steps.push(u(esc.bold), line(`Pengirim: ${data.namaPengirim}`), u(esc.boldOff));
+     }
+     
+     steps.push(line(`Penerima: ${data.namaPenerima}`));
+     steps.push(line(`Bank    : ${data.bankTujuan}`));
+     steps.push(line(`Rekening: ${data.noRekening}`));
+     steps.push(line('--------------------------------'));
+
+     steps.push(line(`NOMINAL : Rp ${data.nominal.toLocaleString('id-ID')}`));
+     steps.push(line(`ADMIN   : Rp ${data.admin.toLocaleString('id-ID')}`));
+     steps.push(u(esc.bold), line(`TOTAL   : Rp ${(data.nominal + data.admin).toLocaleString('id-ID')}`), u(esc.boldOff));
+     steps.push(line('================================'));
+
+     // --- Footer ---
+     steps.push(u(esc.center), line(''));
+     steps.push(u(esc.bold), line(data.status), u(esc.boldOff), line(''));
+     steps.push(line(data.footerLine1));
+     steps.push(line(data.footerLine2));
+     
+     // Extra Feed at the end
+     steps.push(u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed));
 
      // 5. Kirim ke Printer
      for (const step of steps) {

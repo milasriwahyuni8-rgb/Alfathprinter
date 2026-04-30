@@ -142,6 +142,11 @@ export default function App() {
 
   // Sync history based on branch
   useEffect(() => {
+    const local = localStorage.getItem('alfathprint_history');
+    if (local) {
+      try { setHistory(JSON.parse(local)); } catch(e) {}
+    }
+
     if (!user || !userProfile || userProfile.status !== 'active') return;
     
     if (userProfile.branchId) {
@@ -149,7 +154,15 @@ export default function App() {
       const historyCol = collection(branchRef, 'printHistory');
       
       const unsub = onSnapshot(historyCol, (snapshot) => {
-        const h = snapshot.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp })) as unknown as HistoryEntry[];
+        const h = snapshot.docs.map(d => ({ 
+          id: d.id, 
+          timestamp: d.data().timestamp,
+          data: d.data().receiptData || {
+            nominal: d.data().nominal,
+            namaPenerima: d.data().namaPenerima,
+            bankTujuan: d.data().bankTujuan
+          }
+        })) as HistoryEntry[];
         // Sort local since we don't have composite index for ordering yet
         h.sort((a, b) => b.timestamp - a.timestamp);
         setHistory(h);
@@ -184,17 +197,34 @@ export default function App() {
   };
 
   const addToHistory = async (receipt: ReceiptData) => {
-    if (!user || userProfile?.status !== 'active' || !userProfile?.branchId) return; // Only track for specific branch via Firebase
+    const entry: HistoryEntry = {
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: Date.now(),
+      data: receipt
+    };
+
+    // Save locally first
+    try {
+      const localHistory = JSON.parse(localStorage.getItem('alfathprint_history') || '[]');
+      const newHistory = [entry, ...localHistory].slice(0, 50);
+      localStorage.setItem('alfathprint_history', JSON.stringify(newHistory));
+      if (!userProfile?.branchId) {
+        setHistory(newHistory);
+      }
+    } catch (e) {
+      console.error("Local history error:", e);
+    }
+
+    if (!user || userProfile?.status !== 'active' || !userProfile?.branchId) return; 
 
     try {
       const branchRef = doc(db, 'branches', userProfile.branchId);
       const historyCol = collection(branchRef, 'printHistory');
       
-      const historyId = Math.random().toString(36).substr(2, 9);
-      await firestoreSetDoc(doc(historyCol, historyId), {
+      await firestoreSetDoc(doc(historyCol, entry.id), {
         userId: user.uid,
         userEmail: user.email,
-        timestamp: Date.now(),
+        timestamp: entry.timestamp,
         nominal: receipt.nominal || 0,
         namaPenerima: receipt.namaPenerima || 'Tanpa Nama',
         bankTujuan: receipt.bankTujuan || 'Lainnya',
@@ -230,7 +260,7 @@ export default function App() {
         namaPenerima: "TESTER",
         bankTujuan: "BLUETOOTH",
         kodeReferensi: "OK-123"
-      });
+      }, activeLayout);
     } catch (err) {}
     finally { setIsPrinting(false); }
   };
@@ -274,7 +304,7 @@ export default function App() {
   const handlePrintBT = async () => {
     setIsPrinting(true);
     try {
-      await printViaBluetooth(data);
+      await printViaBluetooth(data, activeLayout);
       addToHistory(data);
     } catch (err) {
       // Error handled in bluetooth service via alert
