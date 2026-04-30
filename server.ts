@@ -23,47 +23,24 @@ async function startServer() {
         return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server." });
       }
 
-      const genAI = new GoogleGenAI({ apiKey }) as any;
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      const prompt = `
-        Anda adalah sistem ekstraksi data yang sangat akurat.
-        Analisis gambar struk/bukti transfer ini dan ekstrak detail berikut.
-        Kembalikan HANYA objek JSON dengan key berikut:
-        {
-          "tanggal": "YYYY-MM-DD",
-          "waktu": "HH:MM:SS",
-          "kodeReferensi": "Nomor referensi / ID Transaksi",
-          "bankTujuan": "Nama bank penerima",
-          "noRekening": "Nomor rekening penerima",
-          "namaPenerima": "Nama penerima dana",
-          "nominal": 0
-        }
-      `;
-
-      const result = await model.generateContent({
+      const ai = new GoogleGenAI({ apiKey });
+      const result = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
         contents: [
+          "Ekstrak data JSON dari struk ini. Format: {tanggal, waktu, kodeReferensi, bankTujuan, noRekening, namaPenerima, nominal}",
           {
-            role: 'user',
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  data: base64Data.split(",")[1],
-                  mimeType: mimeType
-                }
-              }
-            ]
+            inlineData: {
+              data: base64Data.split(",")[1],
+              mimeType: mimeType
+            }
           }
         ],
-        generationConfig: {
+        config: {
           responseMimeType: "application/json",
         }
       });
 
-      const response = await result.response;
-      const text = response.text();
-      res.json(JSON.parse(text));
+      res.json(JSON.parse(result.text || "{}"));
     } catch (error: any) {
       console.error("AI Error:", error);
       res.status(500).json({ error: error.message || "Gagal memproses gambar." });

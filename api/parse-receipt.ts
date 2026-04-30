@@ -10,12 +10,11 @@ export default async function handler(req: any, res: any) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return res.status(500).json({ error: "GEMINI_API_KEY is not set on Vercel environment variables." });
+      return res.status(500).json({ error: "GEMINI_API_KEY belum diatur di Vercel Environment Variables." });
     }
 
-    const genAI = new GoogleGenAI({ apiKey }) as any;
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+    const ai = new GoogleGenAI({ apiKey });
+    
     const prompt = `
       Anda adalah AI sistem ekstraksi data struk transfer Alfathprint.
       Analisis gambar ini dan keluarkan data JSON dengan format:
@@ -31,29 +30,23 @@ export default async function handler(req: any, res: any) {
       Pastikan nominal adalah angka saja tanpa titik/koma.
     `;
 
-    const result = await model.generateContent({
+    const result = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
       contents: [
+        prompt,
         {
-          role: 'user',
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                data: base64Data.split(",")[1],
-                mimeType: mimeType
-              }
-            }
-          ]
+          inlineData: {
+            data: base64Data.split(",")[1],
+            mimeType: mimeType
+          }
         }
       ],
-      generationConfig: {
+      config: {
         responseMimeType: "application/json",
       }
     });
 
-    const response = await result.response;
-    const text = response.text();
-    res.status(200).json(JSON.parse(text));
+    res.status(200).json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("Vercel AI Error:", error);
     res.status(500).json({ error: error.message || "Gagal memproses gambar." });
