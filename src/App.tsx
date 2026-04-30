@@ -110,9 +110,13 @@ export default function App() {
             admin: 0, 
           }));
           setView('preview');
-        } catch (err) {
+        } catch (err: any) {
           console.error("Shared content error:", err);
-          setError("Gagal memproses gambar yang dibagikan.");
+          if (err.message?.includes('quota') || err.message?.includes('429')) {
+            setError("Batas pemrosesan AI hari ini sudah habis. Silakan coba lagi besok atau input manual.");
+          } else {
+            setError("Gagal memproses gambar yang dibagikan.");
+          }
         } finally {
           setIsLoading(false);
         }
@@ -154,7 +158,7 @@ export default function App() {
       const historyCol = collection(branchRef, 'printHistory');
       
       const unsub = onSnapshot(historyCol, (snapshot) => {
-        const h = snapshot.docs.map(d => ({ 
+        const remoteHistory = snapshot.docs.map(d => ({ 
           id: d.id, 
           timestamp: d.data().timestamp,
           data: d.data().receiptData || {
@@ -163,9 +167,13 @@ export default function App() {
             bankTujuan: d.data().bankTujuan
           }
         })) as HistoryEntry[];
-        // Sort local since we don't have composite index for ordering yet
-        h.sort((a, b) => b.timestamp - a.timestamp);
-        setHistory(h);
+        
+        // Merge with local history to ensure immediate feedback
+        const localStr = localStorage.getItem('alfathprint_history');
+        const local = localStr ? JSON.parse(localStr) : [];
+        const merged = [...remoteHistory, ...local.filter((l: any) => !remoteHistory.find(r => r.id === l.id))];
+        merged.sort((a, b) => b.timestamp - a.timestamp);
+        setHistory(merged.slice(0, 50));
       }, (err) => {
         console.error("Error fetching history:", err);
       });
@@ -664,9 +672,10 @@ export default function App() {
                 Agar nama <span className="font-bold">Alfathprint</span> muncul saat Anda klik "Share" di aplikasi Bank:
               </p>
               <ul className="mt-2 space-y-1 text-[10px] text-indigo-800 font-bold list-disc ml-4">
-                <li>Klik tombol menu (titik tiga) di browser Chrome Anda.</li>
-                <li>Pilih <span className="text-indigo-600">"Instal Aplikasi"</span> atau <span className="text-indigo-600">"Tambahkan ke Layar Utama"</span>.</li>
-                <li>Setelah terinstal, buka Alfathprint dari layar HP Anda, bukan dari browser lagi.</li>
+                <li>Buka di Chrome Android atau Safari iOS.</li>
+                <li>Klik tombol menu browser (titik tiga) -> <span className="text-indigo-600">"Instal"</span>.</li>
+                <li>Jika hanya muncul "Tambah ke Layar Utama", pastikan cache sudah dihapus & buka link aplikasi yang benar.</li>
+                <li>Setelah terinstal, Alfathprint bisa menerima "Share Gambar" langsung dari aplikasi Bank.</li>
               </ul>
             </div>
 

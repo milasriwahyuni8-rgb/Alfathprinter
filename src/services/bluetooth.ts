@@ -74,21 +74,31 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
      
      if (layout === 'elegant') {
         steps.push(line(`Date: ${data.tanggal}`), line(`Time: ${data.waktu}`), line(`Ref : ${data.kodeReferensi}`), line('--------------------------------'));
+        if (data.showPengirim) {
+           steps.push(u(esc.bold), line(`SENDER: ${data.namaPengirim}`), u(esc.boldOff));
+        }
+        steps.push(line(`TO    : ${data.namaPenerima}`));
+        steps.push(line(`BANK  : ${data.bankTujuan}`));
+        steps.push(line(`ACC   : ${data.noRekening}`));
      } else if (layout === 'modern' || layout === 'bank') {
         steps.push(line(`${data.tanggal} ${data.waktu}`), line(`NO REF: ${data.kodeReferensi}`), line('--------------------------------'));
+        if (data.showPengirim) {
+           steps.push(line(`PENGIRIM: ${data.namaPengirim}`));
+        }
+        steps.push(line(`PENERIMA: ${data.namaPenerima}`));
+        steps.push(line(`TUJUAN  : ${data.bankTujuan}`));
+        steps.push(line(`REKENING: ${data.noRekening}`));
      } else {
         steps.push(line(`TGL: ${data.tanggal}`), line(`JAM: ${data.waktu}`), line(`REF: ${data.kodeReferensi}`), line('--------------------------------'));
-     }
-
-     if (data.showPengirim) {
-        steps.push(u(esc.bold), line(`Pengirim: ${data.namaPengirim}`), u(esc.boldOff));
+        if (data.showPengirim) {
+           steps.push(line(`Pengirim: ${data.namaPengirim}`));
+        }
+        steps.push(line(`Penerima: ${data.namaPenerima}`));
+        steps.push(line(`Bank    : ${data.bankTujuan}`));
+        steps.push(line(`Rekening: ${data.noRekening}`));
      }
      
-     steps.push(line(`Penerima: ${data.namaPenerima}`));
-     steps.push(line(`Bank    : ${data.bankTujuan}`));
-     steps.push(line(`Rekening: ${data.noRekening}`));
      steps.push(line('--------------------------------'));
-
      steps.push(line(`NOMINAL : Rp ${data.nominal.toLocaleString('id-ID')}`));
      steps.push(line(`ADMIN   : Rp ${data.admin.toLocaleString('id-ID')}`));
      steps.push(u(esc.bold), line(`TOTAL   : Rp ${(data.nominal + data.admin).toLocaleString('id-ID')}`), u(esc.boldOff));
