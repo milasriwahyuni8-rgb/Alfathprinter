@@ -81,7 +81,7 @@ export const printViaBluetooth = async (data: ReceiptData) => {
         encoder.encode(`${data.status}\n\n`),
         encoder.encode(`${data.footerLine1}\n`),
         encoder.encode(`${data.footerLine2}\n`),
-        u(esc.feed), u(esc.feed), u(esc.feed)
+        u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed)
      ];
 
      // 5. Kirim ke Printer

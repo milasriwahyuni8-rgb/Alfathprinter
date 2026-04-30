@@ -31,6 +31,7 @@ const LAYOUTS = [
   { id: 'standard', name: '1. Standard' },
   { id: 'modern', name: '2. Modern' },
   { id: 'bank', name: '3. Bank Style' },
+  { id: 'elegant', name: '4. Elegant' },
 ] as const;
 
 export default function App() {

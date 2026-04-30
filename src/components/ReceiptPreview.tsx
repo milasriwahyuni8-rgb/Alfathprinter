@@ -6,7 +6,7 @@ interface ReceiptPreviewProps {
   onChange: (data: ReceiptData) => void;
   fontFamily?: string;
   className?: string;
-  layout?: 'standard' | 'modern' | 'bank';
+  layout?: 'standard' | 'modern' | 'bank' | 'elegant';
 }
 
 const InlineInput = ({ value, onChange, align = 'left', isBold = false, uppercase = false }: { value: string, onChange: (v: string) => void, align?: string, isBold?: boolean, uppercase?: boolean }) => (
@@ -361,6 +361,94 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
     </>
   );
 
+  const renderElegant = () => (
+    <div className="flex flex-col w-full">
+      <div className="text-center font-bold text-lg mb-1 tracking-widest uppercase">
+        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+      </div>
+      <div className="text-center text-[10px] mb-4 opacity-50 italic">
+        --- OFFICIAL RECEIPT ---
+      </div>
+      
+      <div className="flex justify-between border-y border-black/10 py-2 mb-4">
+        <div className="flex flex-col">
+          <span className="text-[9px] opacity-40 font-bold uppercase">Transaction Date</span>
+          <InlineInput value={data.tanggal} onChange={v => onChange({...data, tanggal: v})} align="left" />
+        </div>
+        <div className="flex flex-col text-right">
+          <span className="text-[9px] opacity-40 font-bold uppercase">Time</span>
+          <InlineInput value={data.waktu} onChange={v => onChange({...data, waktu: v})} align="right" />
+        </div>
+      </div>
+
+      <div className="space-y-4 mb-6">
+        {data.showPengirim && (
+          <div className="flex flex-col">
+            <span className="text-[9px] opacity-40 font-bold uppercase underline decoration-indigo-200">Sender</span>
+            <div className="font-bold text-[13px]">
+              <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="left" isBold uppercase />
+            </div>
+          </div>
+        )}
+        <div className="flex flex-col">
+          <span className="text-[9px] opacity-40 font-bold uppercase underline decoration-indigo-200">Recipient</span>
+          <div className="font-bold text-[13px]">
+            <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="left" isBold uppercase />
+          </div>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[9px] opacity-40 font-bold uppercase underline decoration-indigo-200">Destination</span>
+          <div className="flex items-center gap-2">
+             <div className="w-1/3">
+              <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="left" isBold uppercase />
+             </div>
+             <span className="opacity-20">|</span>
+             <div className="flex-1">
+              <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="left" isBold />
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-2 mb-6">
+        <div className="flex justify-between items-center text-[11px]">
+          <span className="opacity-60">Amount</span>
+          <div className="w-24">
+            <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
+          </div>
+        </div>
+        <div className="flex justify-between items-center text-[11px]">
+          <span className="opacity-60">Service Fee</span>
+          <div className="w-24">
+            <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+          </div>
+        </div>
+        <div className="border-t border-black/10 pt-2 flex justify-between items-center font-bold text-sm">
+          <span className="text-indigo-600">TOTAL</span>
+          <span>Rp {total.toLocaleString('id-ID')}</span>
+        </div>
+      </div>
+
+      <div className="text-center mb-6">
+        <div className="inline-block px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black tracking-widest uppercase">
+          {data.status}
+        </div>
+      </div>
+
+      <div className="text-center space-y-1">
+        <div className="text-[10px] font-bold uppercase">
+          <InlineInput value={data.footerLine1} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+        </div>
+        <div className="text-[10px] uppercase opacity-60">
+          <InlineInput value={data.footerLine2} onChange={v => onChange({...data, footerLine2: v})} align="center" />
+        </div>
+      </div>
+      <div className="mt-4 text-center opacity-30 text-[8px] font-mono">
+        REF: {data.kodeReferensi}
+      </div>
+    </div>
+  );
+
   return (
     <div className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl p-6 text-[12px] leading-[1.3] text-black border-t-8 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} style={{ fontFamily }}>
       
@@ -373,6 +461,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         {layout === 'standard' && renderStandard()}
         {layout === 'modern' && renderModern()}
         {layout === 'bank' && renderBank()}
+        {layout === 'elegant' && renderElegant()}
       </div>
       
       {/* Paper Jagged Edge Representation */}
