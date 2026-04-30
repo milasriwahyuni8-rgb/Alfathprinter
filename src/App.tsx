@@ -38,16 +38,20 @@ export default function App() {
 
   // Load saved settings on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem('alfathprint_settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setData(prev => ({
-        ...prev,
-        namaToko: settings.namaToko || prev.namaToko,
-        footerLine1: settings.footerLine1 || prev.footerLine1,
-        footerLine2: settings.footerLine2 || prev.footerLine2,
-        logoUrl: settings.logoUrl || prev.logoUrl,
-      }));
+    try {
+      const savedSettings = localStorage.getItem('alfathprint_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setData(prev => ({
+          ...prev,
+          namaToko: settings.namaToko || prev.namaToko,
+          footerLine1: settings.footerLine1 || prev.footerLine1,
+          footerLine2: settings.footerLine2 || prev.footerLine2,
+          logoUrl: settings.logoUrl || prev.logoUrl,
+        }));
+      }
+    } catch (e) {
+      console.error("Gagal memuat pengaturan:", e);
     }
 
     const handler = (e: any) => {
@@ -98,7 +102,6 @@ export default function App() {
   };
 
   const handleInstallClick = async () => {
-// ...
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -108,7 +111,6 @@ export default function App() {
   };
 
   const handleImageSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-// ...
     const file = e.target.files?.[0];
     if (!file) return;
 
