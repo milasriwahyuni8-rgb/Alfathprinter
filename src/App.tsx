@@ -30,6 +30,7 @@ const INITIAL_DATA: ReceiptData = {
   useFallbackAI: true,
   aiEnabled: true,
   scanEngine: 'ai',
+  customApiKey: '',
 };
 
 const LAYOUTS = [
@@ -147,7 +148,7 @@ export default function App() {
           if (data.scanEngine === 'local') {
             parsedData = await scanReceiptLocally(sharedData.base64Data);
           } else {
-            parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType);
+            parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, data.customApiKey);
           }
 
           setData(prev => ({
@@ -204,6 +205,7 @@ export default function App() {
           showPengirim: settings.showPengirim !== undefined ? settings.showPengirim : prev.showPengirim,
           useFallbackAI: settings.useFallbackAI !== undefined ? settings.useFallbackAI : prev.useFallbackAI,
           aiEnabled: settings.aiEnabled !== undefined ? settings.aiEnabled : prev.aiEnabled,
+          customApiKey: settings.customApiKey || prev.customApiKey,
         }));
       }
     } catch (e) {
@@ -268,6 +270,7 @@ export default function App() {
       useFallbackAI: updatedData.useFallbackAI !== undefined ? updatedData.useFallbackAI : data.useFallbackAI,
       aiEnabled: updatedData.aiEnabled !== undefined ? updatedData.aiEnabled : data.aiEnabled,
       scanEngine: updatedData.scanEngine !== undefined ? updatedData.scanEngine : data.scanEngine,
+      customApiKey: updatedData.customApiKey !== undefined ? updatedData.customApiKey : data.customApiKey,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...updatedData }));
@@ -374,7 +377,7 @@ export default function App() {
         parsedData = await scanReceiptLocally(base64Data);
       } else {
         const mimeType = file.type;
-        parsedData = await parseReceiptFromBase64(base64Data, mimeType);
+        parsedData = await parseReceiptFromBase64(base64Data, mimeType, data.customApiKey);
       }
 
       setData(prev => ({
@@ -877,6 +880,37 @@ export default function App() {
                 <p className="text-[10px] text-indigo-800 leading-relaxed font-semibold">
                    Jika kuota harian AI habis, sistem akan langsung membuka form pengisian manual agar Anda tetap bisa mencetak struk dengan cepat.
                 </p>
+              </div>
+
+              {/* Custom API Key Section */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">Milik Sendiri (BYOK)</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Gratis & Tanpa Limit</p>
+                  </div>
+                  <a 
+                    href="https://aistudio.google.com/app/apikey" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg"
+                  >
+                    Dapatkan Key
+                  </a>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Gemini API Key</label>
+                  <input 
+                    type="password" 
+                    value={data.customApiKey || ''}
+                    onChange={(e) => saveSettings({ customApiKey: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="Pindahkan API Key Anda di sini..."
+                  />
+                  <p className="text-[9px] text-slate-400 mt-2 leading-relaxed">
+                    Kunci ini disimpan <span className="text-emerald-600 font-bold italic">hanya di HP Anda</span>. Dengan menggunakan kunci sendiri, Anda tidak akan terkena limit pemakaian AI aplikasi ini.
+                  </p>
+                </div>
               </div>
             </div>
 

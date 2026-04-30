@@ -1,9 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+function getAI(customKey?: string) {
+  const apiKey = customKey || process.env.GEMINI_API_KEY;
+  return new GoogleGenAI({ apiKey });
+}
 
-export async function parseReceiptFromBase64(base64Data: string, mimeType: string) {
+export async function parseReceiptFromBase64(base64Data: string, mimeType: string, customKey?: string) {
   try {
+    const ai = getAI(customKey);
     const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: {
@@ -39,10 +43,10 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   }
 }
 
-export async function parseReceipt(file: File) {
+export async function parseReceipt(file: File, customKey?: string) {
   const base64Data = await fileToBase64(file);
   const mimeType = file.type;
-  return parseReceiptFromBase64(base64Data, mimeType);
+  return parseReceiptFromBase64(base64Data, mimeType, customKey);
 }
 
 function fileToBase64(file: File): Promise<string> {
