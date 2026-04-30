@@ -6,7 +6,7 @@ interface ReceiptPreviewProps {
   onChange: (data: ReceiptData) => void;
   fontFamily?: string;
   className?: string;
-  layout?: 'standard' | 'modern' | 'bank' | 'elegant' | 'pro';
+  layout?: 'standard' | 'modern' | 'bank' | 'elegant' | 'pro' | 'digital';
 }
 
 const InlineInput = ({ value, onChange, align = 'left', isBold = false, uppercase = false }: { value: string, onChange: (v: string) => void, align?: string, isBold?: boolean, uppercase?: boolean }) => (
@@ -44,7 +44,7 @@ const InlineCurrencyInput = ({ value, onChange, align = 'right', isBold = false 
   );
 };
 
-export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, fontFamily = 'monospace', className = '', layout = 'standard' }) => {
+export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewProps>(({ data, onChange, fontFamily = 'monospace', className = '', layout = 'standard' }, ref) => {
   const total = data.nominal + (data.showAdminFee ? (data.admin || 0) : 0);
 
   const renderStandard = () => (
@@ -555,8 +555,114 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
     </>
   );
 
+  const renderDigital = () => (
+    <div className="flex flex-col gap-[2px] text-[12px] leading-tight font-mono">
+      <div className="text-center font-bold text-base mb-2 uppercase tracking-wider">
+        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+      </div>
+      <div className="text-center select-none mb-2">{'='.repeat(32)}</div>
+      
+      <div className="flex justify-between uppercase">
+        <span className="shrink-0 select-none">TANGGAL</span>
+        <div className="flex-1 w-full truncate text-right">
+           <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="right" />
+        </div>
+      </div>
+      <div className="flex justify-between uppercase">
+        <span className="shrink-0 select-none">WAKTU</span>
+        <div className="flex-1 w-full truncate text-right">
+           <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
+        </div>
+      </div>
+      
+      <div className="text-center select-none my-1">{'-'.repeat(32)}</div>
+      
+      <div className="text-center font-bold uppercase mb-1 select-none">KODE REFERENSI</div>
+      <div className="text-center break-all font-bold mb-2">
+        <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold uppercase />
+      </div>
+      
+      <div className="text-center select-none mb-1">{'-'.repeat(32)}</div>
+      
+      <div className="text-center font-bold uppercase mb-2 select-none">DATA PENERIMA</div>
+      <div className="flex justify-between gap-2 uppercase">
+        <span className="shrink-0 select-none">BANK TUJUAN</span>
+        <div className="flex-1 w-full truncate text-right">
+           <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="right" uppercase />
+        </div>
+      </div>
+      <div className="flex justify-between gap-2 uppercase">
+        <span className="shrink-0 select-none">NO REKENING</span>
+        <div className="flex-1 w-full truncate text-right">
+           <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="right" />
+        </div>
+      </div>
+      <div className="flex justify-between gap-2 uppercase">
+        <span className="shrink-0 select-none">PENERIMA</span>
+        <div className="flex-1 w-full truncate text-right">
+           <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" isBold uppercase />
+        </div>
+      </div>
+      
+      <div className="text-center select-none my-1">{'-'.repeat(32)}</div>
+      
+      <div className="flex justify-between font-bold uppercase">
+        <span className="select-none">NOMINAL</span>
+        <div className="w-24">
+           <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" isBold />
+        </div>
+      </div>
+      {data.showAdminFee && (
+        <div className="flex justify-between font-bold uppercase">
+          <span className="select-none">ADMIN</span>
+          <div className="w-24">
+             <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" isBold />
+          </div>
+        </div>
+      )}
+      
+      <div className="text-center select-none">{'='.repeat(32)}</div>
+      <div className="flex justify-between font-bold uppercase">
+        <span className="select-none">TOTAL</span>
+        <div className="w-28 text-right">
+           <span className="mr-1">Rp</span>
+           <span className="text-base">{new Intl.NumberFormat('id-ID').format(total)}</span>
+        </div>
+      </div>
+      <div className="text-center select-none">{'='.repeat(32)}</div>
+      
+      <div className="mt-4 text-center space-y-1">
+        <div className="font-bold uppercase tracking-wider">
+           <div className="flex items-center justify-center gap-1">
+              <span className="select-none">**</span>
+              <InlineInput value={data.status || 'TRANSAKSI BERHASIL'} onChange={v => onChange({...data, status: v})} align="center" isBold uppercase />
+              <span className="select-none">**</span>
+           </div>
+        </div>
+        <div className="text-[10px] uppercase opacity-70">
+           <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+        </div>
+        <div className="font-bold text-base mt-2 uppercase tracking-widest">
+           <InlineInput value="TERIMA KASIH" onChange={() => {}} align="center" isBold />
+        </div>
+        <div className="text-[10px] opacity-50 uppercase mt-1">
+           <div className="flex items-center justify-center gap-1">
+             <span className="select-none">TID:</span>
+             <div className="w-16">
+               <InlineInput value={data.tid || 'NK-000'} onChange={v => onChange({...data, tid: v})} align="left" uppercase />
+             </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`relative w-[310px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-4 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} style={{ fontFamily }}>
+    <div 
+      ref={ref}
+      className={`relative w-[310px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-4 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
+      style={{ fontFamily }}
+    >
       <div className="p-5 md:p-6 pb-8">
         <div className="receipt-content flex flex-col gap-[1px] relative z-10 bg-white">
         {data.logoUrl && (
@@ -569,6 +675,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         {layout === 'bank' && renderBank()}
         {layout === 'elegant' && renderElegant()}
         {layout === 'pro' && renderPro()}
+        {layout === 'digital' && renderDigital()}
         </div>
       </div>
       
@@ -576,5 +683,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
       <div className="absolute -bottom-[14px] left-0 right-0 h-[14px] bg-white print:hidden pointer-events-none z-0" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }}></div>
     </div>
   );
-};
+});
+
+ReceiptPreview.displayName = 'ReceiptPreview';
 

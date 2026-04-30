@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toPng } from 'html-to-image';
 
 const INITIAL_DATA: ReceiptData = {
   namaToko: 'ALFATHPRINT',
@@ -44,6 +45,7 @@ const LAYOUTS = [
   { id: 'modern', name: '3. Modern' },
   { id: 'bank', name: '4. Bank Style' },
   { id: 'elegant', name: '5. Elegant' },
+  { id: 'digital', name: '6. Digital (WA)' },
 ] as const;
 
 export default function App() {
@@ -64,6 +66,7 @@ export default function App() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [keyStatus, setKeyStatus] = useState<'none' | 'valid' | 'invalid'>(data.customApiKey ? 'valid' : 'none');
+  const receiptRef = React.useRef<HTMLDivElement>(null);
 
   const testApiKey = async () => {
     if (!data.customApiKey) return;
@@ -516,26 +519,75 @@ export default function App() {
     doc.save(`Laporan_Alfathprint_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const shareToWhatsApp = () => {
-    const adminFee = data.showAdminFee ? (data.admin || 0) : 0;
-    const total = data.nominal + adminFee;
+  const shareDigitalReceipt = async () => {
+    if (!receiptRef.current) return;
     
-    const message = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
-      `--------------------------------------%0A` +
-      `*Tanggal:* ${data.tanggal}%0A` +
-      `*Waktu:* ${data.waktu}%0A` +
-      `*Penerima:* ${data.namaPenerima}%0A` +
-      `*Bank:* ${data.bankTujuan}%0A` +
-      `*Rekening:* ${data.noRekening}%0A` +
-      `--------------------------------------%0A` +
-      `*Nominal:* Rp ${data.nominal.toLocaleString('id-ID')}%0A` +
-      (data.showAdminFee ? `*Biaya Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
-      `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
-      `--------------------------------------%0A` +
-      `*Ref:* ${data.kodeReferensi}%0A` +
-      `%0A_Terima kasih telah bertransaksi di ${data.namaToko}_`;
+    setIsPrinting(true);
+    try {
+      // Create a high-quality capture
+      const dataUrl = await toPng(receiptRef.current, { 
+        cacheBust: true, 
+        pixelRatio: 4, 
+        backgroundColor: '#ffffff',
+        style: {
+          transform: 'scale(1)',
+          borderRadius: '0'
+        }
+      });
+      
+      // Prepare for sharing
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `Struk_${data.namaPenerima}_${data.tanggal.replace(/-/g, '')}.png`, { type: 'image/png' });
 
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Struk ${data.namaToko}`,
+          text: `Bukti Transfer an. ${data.namaPenerima} - Rp ${(data.nominal + (data.showAdminFee ? data.admin : 0)).toLocaleString('id-ID')}`
+        });
+      } else {
+        // Fallback for desktop/unsupported browsers
+        const link = document.createElement('a');
+        link.download = `Struk_Alfathprint_${data.namaPenerima}.png`;
+        link.href = dataUrl;
+        link.click();
+        
+        // Also share text summary for context
+        const adminFee = data.showAdminFee ? (data.admin || 0) : 0;
+        const total = data.nominal + adminFee;
+        const message = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
+          `--------------------------------------%0A` +
+          `*Penerima:* ${data.namaPenerima}%0A` +
+          `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
+          `--------------------------------------%0A` +
+          `%0A_Gambar struk digital telah diunduh, silakan lampirkan._`;
+        
+        window.open(`https://wa.me/?text=${message}`, '_blank');
+      }
+    } catch (err: any) {
+      console.error("Digital share error:", err);
+      // Final fallback to text
+      const adminFee = data.showAdminFee ? (data.admin || 0) : 0;
+      const total = data.nominal + adminFee;
+      const message = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
+        `--------------------------------------%0A` +
+        `*Tanggal:* ${data.tanggal}%0A` +
+        `*Waktu:* ${data.waktu}%0A` +
+        `*Penerima:* ${data.namaPenerima}%0A` +
+        `*Bank:* ${data.bankTujuan}%0A` +
+        `*Rekening:* ${data.noRekening}%0A` +
+        `--------------------------------------%0A` +
+        `*Nominal:* Rp ${data.nominal.toLocaleString('id-ID')}%0A` +
+        (data.showAdminFee ? `*Biaya Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
+        `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
+        `--------------------------------------%0A` +
+        `*Ref:* ${data.kodeReferensi}%0A` +
+        `%0A_Terima kasih telah bertransaksi di ${data.namaToko}_`;
+
+      window.open(`https://wa.me/?text=${message}`, '_blank');
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const isAdminUser = userProfile?.role === 'admin' || user?.email === 'peciwaru@gmail.com';
@@ -853,13 +905,13 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">ID Cabang</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">TID Struk</label>
                   <input 
                     type="text" 
-                    value={data.cabang || ''}
-                    onChange={(e) => saveSettings({ cabang: e.target.value })}
+                    value={data.tid || ''}
+                    onChange={(e) => saveSettings({ tid: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="Contoh: CAB01"
+                    placeholder="Contoh: NK-000"
                   />
                 </div>
               </div>
@@ -1248,6 +1300,7 @@ export default function App() {
                 <div className="absolute inset-x-[-20px] inset-y-[-20px] opacity-20 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
                 
                 <ReceiptPreview 
+                  ref={receiptRef}
                   data={data} 
                   onChange={setData} 
                   layout={activeLayout}
@@ -1259,11 +1312,12 @@ export default function App() {
           {/* Bottom Action Bar */}
           <div className="fixed bottom-0 left-0 right-0 bg-[#f2f4f7] px-4 pt-2 pb-6 pb-safe shrink-0 no-print z-20 flex gap-2 max-w-md mx-auto w-full">
             <button 
-              onClick={shareToWhatsApp}
-              className="flex-none bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-lg shadow-emerald-100"
-              title="Bagikan ke WhatsApp"
+              onClick={shareDigitalReceipt}
+              disabled={isPrinting}
+              className="flex-none bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-lg shadow-emerald-100 disabled:opacity-50"
+              title="Bagikan Struk Digital"
             >
-              <Share2 className="w-6 h-6" />
+              {isPrinting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Share2 className="w-6 h-6" />}
             </button>
             <button 
               onClick={handlePrintSystem}
