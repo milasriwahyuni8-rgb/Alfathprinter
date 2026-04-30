@@ -27,6 +27,7 @@ const INITIAL_DATA: ReceiptData = {
   namaPengirim: '-',
   showPengirim: false,
   useFallbackAI: true,
+  aiEnabled: true,
 };
 
 const LAYOUTS = [
@@ -118,6 +119,18 @@ export default function App() {
           // Remove param from URL
           window.history.replaceState({}, document.title, "/");
           
+          if (data.aiEnabled === false) {
+             setData(prev => ({
+               ...prev,
+               tanggal: new Date().toISOString().split('T')[0],
+               waktu: new Date().toTimeString().split(' ')[0],
+               kodeReferensi: '-',
+               tid: 'NK-' + Math.random().toString(36).substr(2, 4).toUpperCase(),
+             }));
+             setView('preview');
+             return;
+          }
+
           const parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType);
           setData(prev => ({
             ...prev,
@@ -172,6 +185,7 @@ export default function App() {
           namaPengirim: settings.namaPengirim || prev.namaPengirim,
           showPengirim: settings.showPengirim !== undefined ? settings.showPengirim : prev.showPengirim,
           useFallbackAI: settings.useFallbackAI !== undefined ? settings.useFallbackAI : prev.useFallbackAI,
+          aiEnabled: settings.aiEnabled !== undefined ? settings.aiEnabled : prev.aiEnabled,
         }));
       }
     } catch (e) {
@@ -234,6 +248,7 @@ export default function App() {
       namaPengirim: updatedData.namaPengirim !== undefined ? updatedData.namaPengirim : data.namaPengirim,
       showPengirim: updatedData.showPengirim !== undefined ? updatedData.showPengirim : data.showPengirim,
       useFallbackAI: updatedData.useFallbackAI !== undefined ? updatedData.useFallbackAI : data.useFallbackAI,
+      aiEnabled: updatedData.aiEnabled !== undefined ? updatedData.aiEnabled : data.aiEnabled,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...updatedData }));
@@ -317,6 +332,18 @@ export default function App() {
   const handleImageSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (data.aiEnabled === false) {
+      setData(prev => ({
+        ...prev,
+        tanggal: new Date().toISOString().split('T')[0],
+        waktu: new Date().toTimeString().split(' ')[0],
+        kodeReferensi: '-',
+        tid: 'NK-' + Math.random().toString(36).substr(2, 4).toUpperCase(),
+      }));
+      setView('preview');
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -740,6 +767,36 @@ export default function App() {
             {/* AI Settings */}
             <div className="space-y-4">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Kecerdasan Buatan (AI)</h3>
+              
+              <div 
+                className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors"
+                onClick={() => saveSettings({ aiEnabled: !data.aiEnabled })}
+              >
+                <div className="flex items-center gap-4">
+                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.aiEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                     <Zap className="w-6 h-6" />
+                   </div>
+                   <div>
+                     <h4 className="font-bold text-slate-800 text-sm">Gunakan AI Intelijen</h4>
+                     <p className="text-[10px] text-slate-400 font-medium">Otomatis ekstraksi data dari foto</p>
+                   </div>
+                </div>
+                <div 
+                  className={`w-12 h-6 rounded-full transition-colors relative ${data.aiEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.aiEnabled ? 'left-7' : 'left-1'}`}></div>
+                </div>
+              </div>
+
+              {!data.aiEnabled && (
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-amber-700 leading-tight font-bold">
+                    AI DINONAKTIFKAN: Anda harus mengisi nominal dan tujuan secara manual.
+                  </p>
+                </div>
+              )}
+
               <div 
                 className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors"
                 onClick={() => saveSettings({ useFallbackAI: !data.useFallbackAI })}

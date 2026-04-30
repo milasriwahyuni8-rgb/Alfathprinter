@@ -23,4 +23,5 @@ export interface ReceiptData {
   namaPengirim?: string;
   showPengirim?: boolean;
   useFallbackAI?: boolean;
+  aiEnabled?: boolean;
 }
