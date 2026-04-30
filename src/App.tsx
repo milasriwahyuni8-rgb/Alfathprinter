@@ -669,8 +669,8 @@ export default function App() {
               </p>
               <ul className="mt-2 space-y-1 text-[10px] text-indigo-800 font-bold list-disc ml-4">
                 <li>Buka di Chrome Android atau Safari iOS.</li>
-                <li>Klik tombol menu browser (titik tiga) -> <span className="text-indigo-600">"Instal"</span>.</li>
-                <li>Jika hanya muncul "Tambah ke Layar Utama", pastikan cache sudah dihapus & buka link aplikasi yang benar.</li>
+                <li>Klik tombol menu browser (titik tiga) {"->"} <span className="text-indigo-600">"Instal"</span>.</li>
+                <li>Jika hanya muncul "Tambah ke Layar Utama", pastikan cache sudah dihapus {"&"} buka link aplikasi yang benar.</li>
                 <li>Setelah terinstal, Alfathprint bisa menerima "Share Gambar" langsung dari aplikasi Bank.</li>
               </ul>
             </div>

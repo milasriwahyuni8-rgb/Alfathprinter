@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alfathprint-v1';
+const CACHE_NAME = 'alfathprint-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -7,18 +7,30 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
+      return cache.addAll(ASSETS).catch(err => console.log("Cache addAll error:", err));
+    })
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
     })
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  // Handle share target POST request
-  if (event.request.method === 'POST' && event.request.url.includes('/share-target')) {
-    return; // Let server handle it
-  }
+  if (event.request.method === 'POST') return;
   
   event.respondWith(
     caches.match(event.request).then((response) => {
