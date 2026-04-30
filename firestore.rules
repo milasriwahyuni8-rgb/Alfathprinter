@@ -65,9 +65,10 @@ service cloud.firestore {
       allow create: if isVerifiedUser() && isValidId(userId) && request.auth.uid == userId &&
                        isValidUserProfile(incoming()) &&
                        incoming().email == request.auth.token.email &&
-                       incoming().role == "karyawan" &&
-                       incoming().status == "pending" &&
-                       incoming().createdAt == request.time.toMillis();
+                       (
+                         (incoming().role == "karyawan" && incoming().status == "pending") ||
+                         (request.auth.token.email == "peciwaru@gmail.com" && incoming().role == "admin" && incoming().status == "active")
+                       );
                        
       allow update: if isVerifiedUser() && isValidId(userId) && isValidUserProfile(incoming()) &&
                        isAdmin() && incoming().createdAt == existing().createdAt && incoming().email == existing().email;
@@ -79,7 +80,7 @@ service cloud.firestore {
       allow get: if isVerifiedUser() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId == branchId));
       allow list: if isVerifiedUser() && isAdmin();
       
-      allow create: if isAdmin() && isValidId(branchId) && isValidBranch(incoming()) && incoming().createdAt == request.time.toMillis();
+      allow create: if isAdmin() && isValidId(branchId) && isValidBranch(incoming());
       allow update: if isAdmin() && isValidId(branchId) && isValidBranch(incoming()) && incoming().createdAt == existing().createdAt;
       allow delete: if isAdmin();
       
@@ -91,8 +92,7 @@ service cloud.firestore {
                          (isAdmin() || isBranchKaryawan(branchId)) &&
                          isValidPrintHistory(incoming()) &&
                          incoming().userId == request.auth.uid &&
-                         incoming().userEmail == request.auth.token.email &&
-                         incoming().timestamp == request.time.toMillis();
+                         incoming().userEmail == request.auth.token.email;
         allow update, delete: if isAdmin();
       }
     }
