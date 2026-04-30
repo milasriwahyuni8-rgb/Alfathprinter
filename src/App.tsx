@@ -917,32 +917,33 @@ export default function App() {
                   </a>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Gemini API Key</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Gemini API Key (Multi-Key Rotation)</label>
                   <div className="relative">
-                    <input 
-                      type="password" 
+                    <textarea 
                       value={data.customApiKey || ''}
                       onChange={(e) => {
                         saveSettings({ customApiKey: e.target.value });
                         setKeyStatus('none');
                       }}
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12"
-                      placeholder="Pindahkan API Key Anda di sini..."
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12 min-h-[80px]"
+                      placeholder="Input 1 atau lebih API Key, pisahkan dengan koma..."
                     />
                     {data.customApiKey && (
                       <button 
                         onClick={testApiKey}
                         disabled={isTestingKey}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-600 hover:bg-white rounded-lg transition-colors"
+                        className="absolute right-2 top-2 p-2 text-indigo-600 hover:bg-white rounded-lg transition-colors"
+                        title="Cek keaktifan Key"
                       >
                         {isTestingKey ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
                       </button>
                     )}
                   </div>
                   <p className="text-[9px] text-slate-400 mt-2 leading-relaxed">
-                    Kunci ini disimpan <span className="text-emerald-600 font-bold italic">hanya di HP Anda</span>. 
-                    {keyStatus === 'valid' && <span className="text-emerald-500 font-bold ml-1">✓ Aktif & Terhubung</span>}
-                    {keyStatus === 'invalid' && <span className="text-red-500 font-bold ml-1">✗ Key Salah/Bermasalah</span>}
+                    <span className="text-indigo-600 font-bold block mb-1">PRO TIP: Masukkan beberapa Key dipisah tanda koma (,) agar jika satu kena limit, aplikasi otomatis pakai Key lain.</span>
+                    Kunci disimpan <span className="text-emerald-600 font-bold italic">hanya di HP Anda</span>. 
+                    {keyStatus === 'valid' && <span className="text-emerald-500 font-bold ml-1">✓ Terhubung</span>}
+                    {keyStatus === 'invalid' && <span className="text-red-500 font-bold ml-1">✗ Ada Key Bermasalah</span>}
                   </p>
                 </div>
               </div>
