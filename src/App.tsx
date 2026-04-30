@@ -33,6 +33,7 @@ const LAYOUTS = [
   { id: 'modern', name: '2. Modern' },
   { id: 'bank', name: '3. Bank Style' },
   { id: 'elegant', name: '4. Elegant' },
+  { id: 'pro', name: '5. Pro (Recommended)' },
 ] as const;
 
 export default function App() {
@@ -86,6 +87,14 @@ export default function App() {
     return () => unsub();
   }, []);
 
+  const cleanNominal = (val: any): number => {
+    if (typeof val === 'number') return val;
+    if (typeof val !== 'string') return 0;
+    // Remove all non-digits (handles symbols like Rp, dots, commas)
+    const cleaned = val.replace(/[^\d]/g, '');
+    return parseInt(cleaned, 10) || 0;
+  };
+
   // Sync settings when auth is loaded
   useEffect(() => {
     if (!isAuthLoaded || !user) return;
@@ -107,7 +116,7 @@ export default function App() {
           setData(prev => ({
             ...prev,
             ...parsedData,
-            nominal: Number(parsedData.nominal) || 0,
+            nominal: cleanNominal(parsedData.nominal),
             admin: 0, 
           }));
           setView('preview');
@@ -309,7 +318,7 @@ export default function App() {
       setData(prev => ({
         ...prev,
         ...parsedData,
-        nominal: Number(parsedData.nominal) || 0,
+        nominal: cleanNominal(parsedData.nominal),
         admin: 0, 
       }));
       setView('preview');

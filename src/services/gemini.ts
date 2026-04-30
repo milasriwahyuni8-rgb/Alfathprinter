@@ -8,7 +8,17 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
       model: "gemini-3-flash-preview",
       contents: {
         parts: [
-          { text: "Ekstrak data JSON dari struk ini. Format: {tanggal, waktu, kodeReferensi, bankTujuan, noRekening, namaPenerima, nominal}" },
+          { text: `Ekstrak data transaksi dari gambar bukti transfer bank ini secara akurat.
+            Output harus berupa JSON murni dengan key: 
+            - tanggal (format: YYYY-MM-DD)
+            - waktu (format: HH:mm)
+            - kodeReferensi (cari juga "No. Referensi", "ID Transaksi", dsb)
+            - bankTujuan (nama bank tujuan transfer)
+            - noRekening (nomor rekening penerima)
+            - namaPenerima (nama lengkap penerima)
+            - nominal (angka murni, ambil dari "Jumlah", "Total", atau "Nominal Transfer")
+
+            Pastikan nominal adalah angka bulat tanpa simbol mata uang.` },
           {
             inlineData: {
               data: base64Data.split(",")[1],

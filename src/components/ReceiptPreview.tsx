@@ -6,7 +6,7 @@ interface ReceiptPreviewProps {
   onChange: (data: ReceiptData) => void;
   fontFamily?: string;
   className?: string;
-  layout?: 'standard' | 'modern' | 'bank' | 'elegant';
+  layout?: 'standard' | 'modern' | 'bank' | 'elegant' | 'pro';
 }
 
 const InlineInput = ({ value, onChange, align = 'left', isBold = false, uppercase = false }: { value: string, onChange: (v: string) => void, align?: string, isBold?: boolean, uppercase?: boolean }) => (
@@ -455,6 +455,106 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
     </div>
   );
 
+  const renderPro = () => (
+    <>
+      <div className="text-center font-bold text-base mb-1 uppercase">
+        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+      </div>
+      
+      <div className="flex justify-between items-center gap-2">
+        <span className="shrink-0 font-bold">TANGGAL</span>
+        <div className="flex-1">
+           <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="right" />
+        </div>
+      </div>
+      <div className="flex justify-between items-center gap-2">
+        <span className="shrink-0 font-bold">WAKTU</span>
+        <div className="flex-1">
+          <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
+        </div>
+      </div>
+      <div className="text-center my-1 select-none font-bold">
+        {'-'.repeat(32)}
+      </div>
+
+      <div className="text-center mb-1">
+        <div className="font-bold uppercase tracking-wider">KODE REFERENSI</div>
+        <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold />
+      </div>
+      
+      <div className="text-center my-4">
+        <div className="font-bold underline uppercase tracking-widest text-[#1e293b]">DATA PENERIMA</div>
+      </div>
+
+      <div className="w-full flex justify-between items-center gap-1 mb-1">
+         <span className="shrink-0 font-bold">BANK TUJUAN</span>
+         <div className="flex-1 w-full overflow-hidden">
+           <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="right" uppercase />
+         </div>
+      </div>
+      <div className="w-full flex justify-between items-center gap-1 mb-1">
+         <span className="shrink-0 font-bold">NO REKENING</span>
+         <div className="flex-1 w-full">
+           <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="right" />
+         </div>
+      </div>
+      <div className="w-full flex justify-between items-center gap-1 mb-4">
+         <span className="shrink-0 font-bold">PENERIMA</span>
+         <div className="flex-1 w-full overflow-hidden">
+            <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" uppercase />
+         </div>
+      </div>
+
+      <div className="text-center mb-1 select-none font-bold">
+        {'-'.repeat(32)}
+      </div>
+
+      <div className="flex justify-between items-center gap-2 mb-1">
+        <span className="shrink-0 font-bold">NOMINAL</span>
+        <div className="flex-1">
+          <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
+        </div>
+      </div>
+      <div className="flex justify-between items-center gap-2 mb-1">
+        <span className="shrink-0 font-bold">ADMIN</span>
+        <div className="flex-1">
+          <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+        </div>
+      </div>
+      
+      <div className="text-center my-1 select-none font-bold">
+        {'-'.repeat(32)}
+      </div>
+
+      <div className="flex justify-between items-center gap-2 font-bold mb-1">
+        <span className="shrink-0 font-bold">TOTAL</span>
+        <div className="flex-1 text-right">
+           <span className="mr-1">Rp</span>
+           <span className="text-base">{new Intl.NumberFormat('id-ID').format(total)}</span>
+        </div>
+      </div>
+
+      <div className="text-center my-1 select-none font-bold">
+        {'-'.repeat(32)}
+      </div>
+      
+      <div className="text-center mt-6 mb-1">
+        <div className="flex items-center justify-center gap-1">
+           <span className="font-black tracking-widest italic text-indigo-900 leading-none">** {data.status} **</span>
+        </div>
+      </div>
+      <div className="text-center mb-1 text-[10px] opacity-60 font-medium">
+         <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+      </div>
+      <div className="text-center font-bold text-slate-800">
+         <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
+      </div>
+      <div className="text-center mt-2 flex items-center justify-center gap-1 text-[9px] font-mono opacity-40">
+         <span>TID: {data.tid}</span>
+      </div>
+    </>
+  );
+
   return (
     <div className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl p-6 text-[12px] leading-[1.3] text-black border-t-8 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} style={{ fontFamily }}>
       
@@ -468,6 +568,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         {layout === 'modern' && renderModern()}
         {layout === 'bank' && renderBank()}
         {layout === 'elegant' && renderElegant()}
+        {layout === 'pro' && renderPro()}
       </div>
       
       {/* Paper Jagged Edge Representation */}
