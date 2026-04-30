@@ -1,0 +1,8 @@
+{
+  "name": "Auto Receipt Printer",
+  "description": "Extract data from transaction screenshots using AI and print thermal receipts (58mm).",
+  "requestFramePermissions": [
+    "bluetooth"
+  ],
+  "majorCapabilities": []
+}

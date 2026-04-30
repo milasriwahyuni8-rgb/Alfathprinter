@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  body {
+    background: white !important;
+  }
+  .print-only-container, .print-only-container * {
+    visibility: visible;
+  }
+  .print-only-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 58mm;
+    margin: 0;
+    padding: 0;
+    color: black !important;
+  }
+  .print-only-container .receipt-content {
+      font-size: 12px;
+      line-height: 1.2;
+  }
+  @page {
+    size: 58mm auto;
+    margin: 0mm;
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
