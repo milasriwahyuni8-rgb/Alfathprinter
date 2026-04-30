@@ -9,7 +9,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   try {
     const ai = getAI(customKey);
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // Menggunakan model yang lebih stabil untuk Free Tier
+      model: "gemini-1.5-flash", 
       contents: {
         parts: [
           { text: `Ekstrak data transaksi dari gambar bukti transfer bank ini secara akurat.
@@ -39,26 +39,49 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
     return JSON.parse(result.text || "{}");
   } catch (error: any) {
     console.error("Gemini Error:", error);
-    if (error.message?.includes('API_KEY_INVALID')) {
+    
+    // Extract meaningful error message from JSON if possible
+    let errorMessage = error.message || "Gagal memproses gambar struk.";
+    try {
+      if (typeof errorMessage === 'string' && errorMessage.includes('{')) {
+        const parsed = JSON.parse(errorMessage.substring(errorMessage.indexOf('{')));
+        if (parsed.error?.message) errorMessage = parsed.error.message;
+      }
+    } catch (e) {}
+
+    if (errorMessage.includes('API_KEY_INVALID')) {
       throw new Error("API Key Anda tidak valid. Periksa kembali di Google AI Studio.");
     }
-    if (error.message?.includes('quota') || error.message?.includes('429')) {
+    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
       throw new Error("Limit tercapai! Akun Google Anda (Free Tier) sudah mencapai batas permintaan per menit.");
     }
-    throw new Error(error.message || "Gagal memproses gambar struk.");
+    if (errorMessage.includes('not found')) {
+      throw new Error("Model AI tidak ditemukan. Mencoba model alternatif...");
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
 export async function testGeminiKey(customKey: string) {
   try {
     const ai = getAI(customKey);
+    // Kita gunakan model ID yang paling dasar tanpa awalan 'models/' jika SDK sudah menambahkannya
     const result = await ai.models.generateContent({
       model: "gemini-1.5-flash",
       contents: { parts: [{ text: "hi" }] }
     });
     return !!result.text;
   } catch (error: any) {
-    throw new Error(error.message || "Koneksi gagal");
+    console.error("Test Key Error:", error);
+    let msg = error.message || "Koneksi gagal";
+    try {
+      if (typeof msg === 'string' && msg.includes('{')) {
+        const parsed = JSON.parse(msg.substring(msg.indexOf('{')));
+        if (parsed.error?.message) msg = parsed.error.message;
+      }
+    } catch (e) {}
+    throw new Error(msg);
   }
 }
 
