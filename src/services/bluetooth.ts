@@ -68,7 +68,7 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         steps.push(line(lv('WAKTU', data.waktu)));
         steps.push(line('--------------------------------'));
         
-        steps.push(u(esc.center), line('KODE REFERENSI'), line(data.kodeReferensi), line(''));
+        steps.push(u(esc.center), line('KODE REFERENSI'), line(data.kodeReferensi), line('--------------------------------'), line(''));
         
         steps.push(line('DATA PENERIMA'));
         steps.push(u(esc.left), line(lv('BANK TUJUAN', data.bankTujuan.toUpperCase())));
@@ -78,7 +78,11 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         
         steps.push(line(lv('NOMINAL', `RP ${data.nominal.toLocaleString('id-ID')}`)));
         steps.push(line(lv('ADMIN', `RP ${data.admin.toLocaleString('id-ID')}`)));
+        steps.push(line('--------------------------------'));
+        
         steps.push(u(esc.bold), line(lv('TOTAL', `RP ${(data.nominal + data.admin).toLocaleString('id-ID')}`)), u(esc.boldOff));
+        steps.push(line('--------------------------------'));
+        steps.push(line(' '));
         steps.push(line('--------------------------------'));
         
         steps.push(u(esc.center), line('** TRANSAKSI BERHASIL **'));

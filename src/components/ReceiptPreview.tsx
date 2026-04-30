@@ -481,6 +481,9 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         <div className="font-bold uppercase tracking-wider">KODE REFERENSI</div>
         <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold />
       </div>
+      <div className="text-center my-1 select-none font-bold">
+        {'-'.repeat(32)}
+      </div>
       
       <div className="text-center my-4">
         <div className="font-bold underline uppercase tracking-widest text-[#1e293b]">DATA PENERIMA</div>
@@ -527,13 +530,17 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
       </div>
 
       <div className="flex justify-between items-center gap-2 font-bold mb-1">
-        <span className="shrink-0 font-bold">TOTAL</span>
+        <span className="shrink-0 font-bold text-lg">TOTAL</span>
         <div className="flex-1 text-right">
            <span className="mr-1">Rp</span>
-           <span className="text-base">{new Intl.NumberFormat('id-ID').format(total)}</span>
+           <span className="text-lg font-black">{new Intl.NumberFormat('id-ID').format(total)}</span>
         </div>
       </div>
 
+      <div className="text-center my-1 select-none font-bold">
+        {'-'.repeat(32)}
+      </div>
+      <div className="h-4"></div>
       <div className="text-center my-1 select-none font-bold">
         {'-'.repeat(32)}
       </div>
