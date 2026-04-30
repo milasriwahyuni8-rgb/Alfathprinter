@@ -9,7 +9,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   try {
     const ai = getAI(customKey);
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash", 
+      model: "gemini-3-flash-preview", 
       contents: {
         parts: [
           { text: `Ekstrak data transaksi dari gambar bukti transfer bank ini secara akurat.
@@ -42,21 +42,30 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
     
     // Extract meaningful error message from JSON if possible
     let errorMessage = error.message || "Gagal memproses gambar struk.";
-    try {
-      if (typeof errorMessage === 'string' && errorMessage.includes('{')) {
-        const parsed = JSON.parse(errorMessage.substring(errorMessage.indexOf('{')));
-        if (parsed.error?.message) errorMessage = parsed.error.message;
+    
+    // Detect internal SDK error structures
+    if (typeof errorMessage === 'string' && errorMessage.includes('{')) {
+      try {
+        const jsonStart = errorMessage.indexOf('{');
+        const parsed = JSON.parse(errorMessage.substring(jsonStart));
+        if (parsed.error?.message) {
+          errorMessage = parsed.error.message;
+        } else if (parsed.message) {
+          errorMessage = parsed.message;
+        }
+      } catch (e) {
+        console.error("Failed to parse inner error:", e);
       }
-    } catch (e) {}
+    }
 
     if (errorMessage.includes('API_KEY_INVALID')) {
       throw new Error("API Key Anda tidak valid. Periksa kembali di Google AI Studio.");
     }
-    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+    if (errorMessage.toLowerCase().includes('quota') || errorMessage.includes('429')) {
       throw new Error("Limit tercapai! Akun Google Anda (Free Tier) sudah mencapai batas permintaan per menit.");
     }
-    if (errorMessage.includes('not found')) {
-      throw new Error("Model AI tidak ditemukan. Mencoba model alternatif...");
+    if (errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('entity')) {
+      throw new Error("Model AI tidak tersedia untuk Key ini. Pastikan akun Google Cloud Anda aktif.");
     }
     
     throw new Error(errorMessage);
@@ -66,21 +75,25 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
 export async function testGeminiKey(customKey: string) {
   try {
     const ai = getAI(customKey);
-    // Kita gunakan model ID yang paling dasar tanpa awalan 'models/' jika SDK sudah menambahkannya
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: { parts: [{ text: "hi" }] }
     });
     return !!result.text;
   } catch (error: any) {
     console.error("Test Key Error:", error);
     let msg = error.message || "Koneksi gagal";
-    try {
-      if (typeof msg === 'string' && msg.includes('{')) {
-        const parsed = JSON.parse(msg.substring(msg.indexOf('{')));
-        if (parsed.error?.message) msg = parsed.error.message;
-      }
-    } catch (e) {}
+    if (typeof msg === 'string' && msg.includes('{')) {
+      try {
+        const jsonStart = msg.indexOf('{');
+        const parsed = JSON.parse(msg.substring(jsonStart));
+        if (parsed.error?.message) {
+          msg = parsed.error.message;
+        } else if (parsed.message) {
+          msg = parsed.message;
+        }
+      } catch (e) {}
+    }
     throw new Error(msg);
   }
 }
