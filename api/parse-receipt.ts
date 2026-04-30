@@ -17,18 +17,18 @@ export default async function handler(req: any, res: any) {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-      Anda adalah sistem ekstraksi data yang sangat akurat.
-      Analisis gambar struk/bukti transfer ini dan ekstrak detail berikut.
-      Kembalikan HANYA objek JSON dengan key berikut:
+      Anda adalah AI sistem ekstraksi data struk transfer Alfathprint.
+      Analisis gambar ini dan keluarkan data JSON dengan format:
       {
         "tanggal": "YYYY-MM-DD",
         "waktu": "HH:MM:SS",
-        "kodeReferensi": "Nomor referensi / ID Transaksi",
-        "bankTujuan": "Nama bank penerima",
-        "noRekening": "Nomor rekening penerima",
-        "namaPenerima": "Nama penerima dana",
+        "kodeReferensi": "ID Transaksi / Ref",
+        "bankTujuan": "Nama Bank (HURUF KAPITAL)",
+        "noRekening": "Nomor Rekening",
+        "namaPenerima": "Nama Penerima (HURUF KAPITAL)",
         "nominal": 0
       }
+      Pastikan nominal adalah angka saja tanpa titik/koma.
     `;
 
     const result = await model.generateContent({

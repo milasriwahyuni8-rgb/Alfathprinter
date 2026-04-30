@@ -12,7 +12,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.ico', 'mask-icon.svg'],
         manifest: {
           name: 'Alfathprint - Thermal Receipt Printer',
           short_name: 'Alfathprint',
@@ -20,12 +20,40 @@ export default defineConfig(({mode}) => {
           theme_color: '#4f46e5',
           background_color: '#f2f4f7',
           display: 'standalone',
+          orientation: 'portrait',
+          scope: '/',
+          start_url: '/',
           icons: [
             {
               src: 'https://cdn-icons-png.flaticon.com/512/3004/3004458.png',
               sizes: '512x512',
               type: 'image/png',
+              purpose: 'any maskable'
+            },
+            {
+              src: 'https://cdn-icons-png.flaticon.com/512/3004/3004458.png',
+              sizes: '192x192',
+              type: 'image/png',
               purpose: 'any'
+            }
+          ]
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/cdn-icons-png\.flaticon\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'external-icons',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
             }
           ]
         }
