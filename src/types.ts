@@ -24,4 +24,5 @@ export interface ReceiptData {
   showPengirim?: boolean;
   useFallbackAI?: boolean;
   aiEnabled?: boolean;
+  scanEngine?: 'ai' | 'local';
 }

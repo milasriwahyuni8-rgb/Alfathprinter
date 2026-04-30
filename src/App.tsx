@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { parseReceipt, parseReceiptFromBase64 } from './services/gemini';
+import { scanReceiptLocally } from './services/localOcr';
 import { printViaBluetooth } from './services/bluetooth';
 import { ReceiptData, HistoryEntry } from './types';
 import { ReceiptPreview } from './components/ReceiptPreview';
@@ -28,6 +29,7 @@ const INITIAL_DATA: ReceiptData = {
   showPengirim: false,
   useFallbackAI: true,
   aiEnabled: true,
+  scanEngine: 'ai',
 };
 
 const LAYOUTS = [
@@ -54,6 +56,15 @@ export default function App() {
   const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('standard');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
 
   // Initialize Firebase Auth & Profile
   useEffect(() => {
@@ -131,7 +142,14 @@ export default function App() {
              return;
           }
 
-          const parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType);
+          setIsLoading(true);
+          let parsedData;
+          if (data.scanEngine === 'local') {
+            parsedData = await scanReceiptLocally(sharedData.base64Data);
+          } else {
+            parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType);
+          }
+
           setData(prev => ({
             ...prev,
             ...parsedData,
@@ -249,6 +267,7 @@ export default function App() {
       showPengirim: updatedData.showPengirim !== undefined ? updatedData.showPengirim : data.showPengirim,
       useFallbackAI: updatedData.useFallbackAI !== undefined ? updatedData.useFallbackAI : data.useFallbackAI,
       aiEnabled: updatedData.aiEnabled !== undefined ? updatedData.aiEnabled : data.aiEnabled,
+      scanEngine: updatedData.scanEngine !== undefined ? updatedData.scanEngine : data.scanEngine,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...updatedData }));
@@ -348,7 +367,16 @@ export default function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const parsedData = await parseReceipt(file);
+      const base64Data = await fileToBase64(file);
+      
+      let parsedData;
+      if (data.scanEngine === 'local') {
+        parsedData = await scanReceiptLocally(base64Data);
+      } else {
+        const mimeType = file.type;
+        parsedData = await parseReceiptFromBase64(base64Data, mimeType);
+      }
+
       setData(prev => ({
         ...prev,
         ...parsedData,
@@ -793,6 +821,34 @@ export default function App() {
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-amber-700 leading-tight font-bold">
                     AI DINONAKTIFKAN: Anda harus mengisi nominal dan tujuan secara manual.
+                  </p>
+                </div>
+              )}
+
+              {data.aiEnabled && (
+                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100 flex gap-1 p-1 h-12">
+                   <button 
+                     onClick={() => saveSettings({ scanEngine: 'ai' })}
+                     className={`flex-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${data.scanEngine === 'ai' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-400'}`}
+                   >
+                     <Zap className="w-3 h-3" />
+                     Mesin Cloud (AI)
+                   </button>
+                   <button 
+                     onClick={() => saveSettings({ scanEngine: 'local' })}
+                     className={`flex-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${data.scanEngine === 'local' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'text-slate-400'}`}
+                   >
+                     <Smartphone className="w-3 h-3" />
+                     Mesin Lokal (OCR)
+                   </button>
+                </div>
+              )}
+
+              {data.aiEnabled && data.scanEngine === 'local' && (
+                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-emerald-700 leading-tight font-bold">
+                    SCAN LOKAL AKTIF: Gratis selamanya, privasi aman, berjalan di HP Anda. Pastikan gambar tajam!
                   </p>
                 </div>
               )}
