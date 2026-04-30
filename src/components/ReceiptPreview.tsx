@@ -13,7 +13,7 @@ const InlineInput = ({ value, onChange, align = 'left', isBold = false, uppercas
   <input
     value={value || ''}
     onChange={(e) => onChange(uppercase ? e.target.value.toUpperCase() : e.target.value)}
-    className={`bg-transparent outline-none border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:bg-white hover:bg-slate-50 rounded transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
+    className={`bg-transparent outline-none border border-transparent hover:border-indigo-600/30 focus:border-indigo-600 focus:bg-indigo-50/50 hover:bg-slate-50/50 rounded-sm transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
     style={{ textAlign: align as any, padding: '2px 4px', margin: '-2px -4px', width: 'calc(100% + 8px)' }}
     spellCheck={false}
   />
@@ -26,8 +26,8 @@ const InlineCurrencyInput = ({ value, onChange, align = 'right', isBold = false 
   };
 
   return (
-    <div className="relative w-full flex items-center">
-      <span className="shrink-0 select-none mr-1">Rp</span>
+    <div className="relative w-full flex items-center group">
+      <span className="shrink-0 select-none mr-1 opacity-40 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-opacity">Rp</span>
       <input
         type="text"
         value={formatValue(value)}
@@ -36,7 +36,7 @@ const InlineCurrencyInput = ({ value, onChange, align = 'right', isBold = false 
            const numericValue = parseInt(rawValue, 10);
            onChange(isNaN(numericValue) ? 0 : numericValue);
         }}
-        className={`bg-transparent outline-none border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:bg-white hover:bg-slate-50 rounded transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
+        className={`bg-transparent outline-none border border-transparent hover:border-indigo-600/30 focus:border-indigo-600 focus:bg-indigo-50/50 hover:bg-slate-50/50 rounded-sm transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
         style={{ textAlign: align as any, padding: '2px 4px', width: '100%' }}
         spellCheck={false}
       />
@@ -162,12 +162,6 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
       <div className="text-center font-bold">
          <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
       </div>
-      <div className="text-center mt-2 flex items-center justify-center gap-1">
-         <span className="select-none">TID:</span>
-         <div className="w-[100px]">
-           <InlineInput value={data.tid || ''} onChange={v => onChange({...data, tid: v})} align="left" uppercase />
-         </div>
-      </div>
     </>
   );
 
@@ -247,12 +241,6 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
       </div>
       <div className="text-center font-bold mt-2">
          <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
-      </div>
-      <div className="text-center mt-2 flex items-center justify-center gap-1">
-         <span className="select-none">TID:</span>
-         <div className="w-[100px]">
-           <InlineInput value={data.tid || ''} onChange={v => onChange({...data, tid: v})} align="left" uppercase />
-         </div>
       </div>
     </>
   );
@@ -556,16 +544,13 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
       <div className="text-center font-bold text-slate-800">
          <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
       </div>
-      <div className="text-center mt-2 flex items-center justify-center gap-1 text-[9px] font-mono opacity-40">
-         <span>TID: {data.tid}</span>
-      </div>
     </>
   );
 
   return (
-    <div className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl p-6 text-[12px] leading-[1.3] text-black border-t-8 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} style={{ fontFamily }}>
-      
-      <div className="receipt-content flex flex-col gap-[2px] relative z-10 bg-white">
+    <div className={`relative w-[310px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-4 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} style={{ fontFamily }}>
+      <div className="p-5 md:p-6 pb-8">
+        <div className="receipt-content flex flex-col gap-[1px] relative z-10 bg-white">
         {data.logoUrl && (
           <div className="flex justify-center mb-4 no-print-logo">
             <img src={data.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
@@ -576,6 +561,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
         {layout === 'bank' && renderBank()}
         {layout === 'elegant' && renderElegant()}
         {layout === 'pro' && renderPro()}
+        </div>
       </div>
       
       {/* Paper Jagged Edge Representation */}
