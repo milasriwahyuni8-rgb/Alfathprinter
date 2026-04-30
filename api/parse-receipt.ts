@@ -31,16 +31,18 @@ export default async function handler(req: any, res: any) {
     `;
 
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: [
-        prompt,
-        {
-          inlineData: {
-            data: base64Data.split(",")[1],
-            mimeType: mimeType
+      model: "gemini-3-flash-preview",
+      contents: {
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              data: base64Data.split(",")[1],
+              mimeType: mimeType
+            }
           }
-        }
-      ],
+        ]
+      },
       config: {
         responseMimeType: "application/json",
       }

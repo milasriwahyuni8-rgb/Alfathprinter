@@ -25,16 +25,18 @@ async function startServer() {
 
       const ai = new GoogleGenAI({ apiKey });
       const result = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [
-          "Ekstrak data JSON dari struk ini. Format: {tanggal, waktu, kodeReferensi, bankTujuan, noRekening, namaPenerima, nominal}",
-          {
-            inlineData: {
-              data: base64Data.split(",")[1],
-              mimeType: mimeType
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            { text: "Ekstrak data JSON dari struk ini. Format: {tanggal, waktu, kodeReferensi, bankTujuan, noRekening, namaPenerima, nominal}" },
+            {
+              inlineData: {
+                data: base64Data.split(",")[1],
+                mimeType: mimeType
+              }
             }
-          }
-        ],
+          ]
+        },
         config: {
           responseMimeType: "application/json",
         }
