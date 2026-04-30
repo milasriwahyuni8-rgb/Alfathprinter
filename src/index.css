@@ -41,3 +41,16 @@
   padding-bottom: env(safe-area-inset-bottom, 16px);
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  overscroll-behavior-y: contain;
+  touch-action: pan-x pan-y;
+}
+
+.receipt-content {
+  image-rendering: pixelated;
+}
+

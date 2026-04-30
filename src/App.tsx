@@ -92,18 +92,29 @@ export default function App() {
             )}
 
             {/* Main Action Banner */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-3xl p-6 text-white shadow-lg shadow-indigo-200">
+            <div 
+              className="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-3xl p-6 text-white shadow-lg shadow-indigo-200 cursor-pointer active:scale-[0.98] transition-transform"
+              onClick={() => document.getElementById('fileInput')?.click()}
+            >
               <div className="relative z-10">
                 <h2 className="text-2xl font-bold mb-2">Cetak Bukti Transfer</h2>
                 <p className="text-indigo-100 text-sm mb-6 max-w-[200px] leading-relaxed">
                   Pilih bukti transfer dari galeri, ubah menjadi struk.
                 </p>
-                <label className="inline-flex cursor-pointer group">
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageSelected} disabled={isLoading} />
+                <div className="inline-flex">
+                  <input 
+                    id="fileInput"
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handleImageSelected} 
+                    disabled={isLoading} 
+                    onClick={(e) => e.stopPropagation()} // Prevent double trigger
+                  />
                   <div className="bg-white/20 hover:bg-white/30 backdrop-blur-md transition-colors p-4 rounded-2xl">
                     {isLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
                   </div>
-                </label>
+                </div>
               </div>
               <div className="absolute -right-8 -top-8 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
               <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-400/30 rounded-full blur-2xl pointer-events-none"></div>
