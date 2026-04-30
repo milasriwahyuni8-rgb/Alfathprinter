@@ -36,7 +36,20 @@ export default defineConfig(({mode}) => {
               type: 'image/png',
               purpose: 'any'
             }
-          ]
+          ],
+          share_target: {
+            action: "/share-target",
+            method: "POST",
+            enctype: "multipart/form-data",
+            params: {
+              files: [
+                {
+                  name: "receipt",
+                  accept: ["image/*"]
+                }
+              ]
+            }
+          }
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],

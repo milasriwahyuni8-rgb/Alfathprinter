@@ -15,25 +15,39 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  const upload = multer({ storage: multer.memoryStorage() });
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 15 * 1024 * 1024 } // 15MB limit
+  });
 
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
   // Web Share Target Handler
   app.post("/share-target", upload.single('receipt'), (req: any, res) => {
+    console.log("Receive share-target request");
     if (!req.file) {
+      console.log("No file received in share-target");
       return res.redirect("/");
     }
+    
+    console.log(`File received: ${req.file.originalname}, size: ${req.file.size}`);
     const sharedId = Math.random().toString(36).substring(2, 11);
     sharedContents.set(sharedId, {
       buffer: req.file.buffer,
       mimetype: req.file.mimetype
     });
     
-    // Clean up after 1 minute to avoid memory leaks
-    setTimeout(() => sharedContents.delete(sharedId), 60000);
+    // Clean up after 5 minutes to allow more time for app to load and auth
+    setTimeout(() => {
+      if (sharedContents.has(sharedId)) {
+        console.log(`Cleaning up shared content ${sharedId}`);
+        sharedContents.delete(sharedId);
+      }
+    }, 300000);
     
-    res.redirect(`/?sharedId=${sharedId}`);
+    console.log(`Redirecting to /?sharedId=${sharedId}`);
+    res.redirect(303, `/?sharedId=${sharedId}`);
   });
 
   // API to fetch shared data

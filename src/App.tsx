@@ -97,11 +97,16 @@ export default function App() {
 
   // Sync settings when auth is loaded
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedId = params.get('sharedId');
+    
+    if (sharedId && !user && isAuthLoaded) {
+       setError("Gambar diterima! Silakan masuk dengan Google untuk memproses.");
+    }
+
     if (!isAuthLoaded || !user) return;
     
     // Check for shared image from Web Share Target
-    const params = new URLSearchParams(window.location.search);
-    const sharedId = params.get('sharedId');
     if (sharedId) {
       const fetchShared = async () => {
         try {
