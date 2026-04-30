@@ -1,20 +1,34 @@
 import { GoogleGenAI } from "@google/genai";
 
 function getAI(customKey?: string) {
-  const apiKey = customKey || process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("API Key tidak ditemukan.");
-  return new GoogleGenAI(apiKey);
+  // Priority: 1. User Input Key, 2. Vite Env, 3. Process Env
+  let apiKey = "";
+
+  if (customKey && typeof customKey === "string" && customKey.trim() !== "" && customKey !== "undefined") {
+    apiKey = customKey.trim();
+  } else if (import.meta.env.VITE_GEMINI_API_KEY) {
+    apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  } else {
+    try {
+      // @ts-ignore
+      apiKey = process.env.GEMINI_API_KEY || "";
+    } catch (e) {}
+  }
+
+  // The @google/genai constructor MUST receive an object with apiKey
+  // If apiKey is empty here, it will throw "An API Key must be set..."
+  return new GoogleGenAI({ apiKey: apiKey });
 }
 
 export async function parseReceiptFromBase64(base64Data: string, mimeType: string, customKey?: string) {
   try {
     const ai = getAI(customKey);
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const result = await model.generateContent({
+    // Correct @google/genai v1.x usage: call ai.models.generateContent directly
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
       contents: [
         {
-          role: "user",
           parts: [
             { text: `Ekstrak data transaksi dari gambar bukti transfer bank ini secara akurat.
               Output harus berupa JSON murni dengan key: 
@@ -36,13 +50,12 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
           ]
         }
       ],
-      generationConfig: {
+      config: {
         responseMimeType: "application/json",
       }
     });
 
-    const response = await result.response;
-    return JSON.parse(response.text() || "{}");
+    return JSON.parse(response.text || "{}");
   } catch (error: any) {
     console.error("Gemini Error:", error);
     
@@ -57,14 +70,14 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
       } catch (e) {}
     }
 
-    if (errorMessage.includes('API_KEY_INVALID')) {
-      throw new Error("API Key Anda tidak valid. Periksa kembali di Google AI Studio.");
+    if (errorMessage.includes('API Key must be set') || errorMessage.includes('API_KEY_INVALID')) {
+      throw new Error("API Key tidak terbaca/salah. Silakan masukkan API Key Anda secara manual di menu Pengaturan aplikasi.");
     }
     if (errorMessage.toLowerCase().includes('quota') || errorMessage.includes('429')) {
       throw new Error("Limit tercapai! Akun Google Anda (Free Tier) sudah mencapai batas permintaan per menit (15 RPM). Silakan tunggu 1 menit.");
     }
     if (errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('entity')) {
-      throw new Error("Model gemini-1.5-flash tidak tersedia untuk Key ini. Pastikan akun Google Cloud Anda aktif.");
+      throw new Error("Model gemini-3-flash-preview tidak tersedia untuk Key ini. Pastikan akun Google Cloud Anda aktif.");
     }
     
     throw new Error(errorMessage);
@@ -74,10 +87,11 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
 export async function testGeminiKey(customKey: string) {
   try {
     const ai = getAI(customKey);
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent("Say 'ok'");
-    const response = await result.response;
-    return !!response.text();
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: "Say 'ok'"
+    });
+    return !!response.text;
   } catch (error: any) {
     console.error("Test Key Error:", error);
     let msg = error.message || "Koneksi gagal";
@@ -88,6 +102,9 @@ export async function testGeminiKey(customKey: string) {
         if (parsed.error?.message) msg = parsed.error.message;
         else if (parsed.message) msg = parsed.message;
       } catch (e) {}
+    }
+    if (msg.includes('API Key must be set')) {
+      msg = "API Key kosong atau tidak terbaca. Harap masukkan kembali.";
     }
     throw new Error(msg);
   }
