@@ -45,7 +45,7 @@ const InlineCurrencyInput = ({ value, onChange, align = 'right', isBold = false 
 };
 
 export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, fontFamily = 'monospace', className = '', layout = 'standard' }) => {
-  const total = data.nominal + data.admin;
+  const total = data.nominal + (data.showAdminFee ? (data.admin || 0) : 0);
 
   const renderStandard = () => (
     <>
@@ -127,12 +127,14 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
           <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
         </div>
       </div>
-      <div className="flex justify-between items-center gap-2">
-        <span className="shrink-0 select-none">ADMIN</span>
-        <div className="flex-1">
-          <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+      {data.showAdminFee && (
+        <div className="flex justify-between items-center gap-2">
+          <span className="shrink-0 select-none">ADMIN</span>
+          <div className="flex-1">
+            <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="text-center my-1 select-none font-bold">
         {'='.repeat(32)}
@@ -324,13 +326,15 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
            <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="left" isBold />
          </div>
       </div>
-      <div className="flex items-center font-bold">
-         <span className="shrink-0 w-[120px] select-none">BIAYA ADMIN</span>
-         <span className="select-none mr-2">:</span>
-         <div className="flex-1">
-           <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="left" isBold />
-         </div>
-      </div>
+      {data.showAdminFee && (
+        <div className="flex items-center font-bold">
+           <span className="shrink-0 w-[120px] select-none">BIAYA ADMIN</span>
+           <span className="select-none mr-2">:</span>
+           <div className="flex-1">
+             <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="left" isBold />
+           </div>
+        </div>
+      )}
       <div className="flex items-center font-bold">
          <span className="shrink-0 w-[120px] select-none">TOTAL</span>
          <span className="select-none mr-2">:</span>
@@ -411,12 +415,14 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
             <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
           </div>
         </div>
-        <div className="flex justify-between items-center text-[11px]">
-          <span className="opacity-60">Service Fee</span>
-          <div className="w-24">
-            <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+        {data.showAdminFee && (
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="opacity-60">Service Fee</span>
+            <div className="w-24">
+              <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+            </div>
           </div>
-        </div>
+        )}
         <div className="border-t border-black/10 pt-2 flex justify-between items-center font-bold text-sm">
           <span className="text-indigo-600">TOTAL</span>
           <span>Rp {total.toLocaleString('id-ID')}</span>
@@ -506,12 +512,14 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ data, onChange, 
           <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
         </div>
       </div>
-      <div className="flex justify-between items-center gap-2 mb-1">
-        <span className="shrink-0 font-bold">ADMIN</span>
-        <div className="flex-1">
-          <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+      {data.showAdminFee && (
+        <div className="flex justify-between items-center gap-2 mb-1">
+          <span className="shrink-0 font-bold">ADMIN</span>
+          <div className="flex-1">
+            <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
+          </div>
         </div>
-      </div>
+      )}
       
       <div className="text-center my-1 select-none font-bold">
         {'-'.repeat(32)}

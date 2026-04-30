@@ -8,8 +8,12 @@ import { AdminPanel } from './components/AdminPanel';
 import { auth, db, loginWithGoogle, logout } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, setDoc as firestoreSetDoc, addDoc } from 'firebase/firestore';
-import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert, Key, RefreshCw } from 'lucide-react';
+import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert, Key, RefreshCw, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const INITIAL_DATA: ReceiptData = {
   namaToko: 'ALFATHPRINT',
@@ -31,6 +35,7 @@ const INITIAL_DATA: ReceiptData = {
   aiEnabled: true,
   scanEngine: 'ai',
   customApiKey: '',
+  showAdminFee: true,
 };
 
 const LAYOUTS = [
@@ -222,6 +227,7 @@ export default function App() {
           useFallbackAI: settings.useFallbackAI !== undefined ? settings.useFallbackAI : prev.useFallbackAI,
           aiEnabled: settings.aiEnabled !== undefined ? settings.aiEnabled : prev.aiEnabled,
           customApiKey: settings.customApiKey || prev.customApiKey,
+          showAdminFee: settings.showAdminFee !== undefined ? settings.showAdminFee : prev.showAdminFee,
         }));
       }
     } catch (e) {
@@ -287,6 +293,7 @@ export default function App() {
       aiEnabled: updatedData.aiEnabled !== undefined ? updatedData.aiEnabled : data.aiEnabled,
       scanEngine: updatedData.scanEngine !== undefined ? updatedData.scanEngine : data.scanEngine,
       customApiKey: updatedData.customApiKey !== undefined ? updatedData.customApiKey : data.customApiKey,
+      showAdminFee: updatedData.showAdminFee !== undefined ? updatedData.showAdminFee : data.showAdminFee,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...updatedData }));
@@ -442,6 +449,93 @@ export default function App() {
     } finally {
       setIsPrinting(false);
     }
+  };
+
+  const exportToExcel = () => {
+    if (history.length === 0) {
+      alert("Tidak ada data riwayat untuk diekspor.");
+      return;
+    }
+
+    const exportData = history.map((entry, index) => {
+      const adminFee = entry.data.showAdminFee !== false ? (entry.data.admin || 0) : 0;
+      return {
+        'No.': index + 1,
+        'Tanggal': entry.data.tanggal,
+        'Waktu': entry.data.waktu,
+        'Nama Penerima': entry.data.namaPenerima,
+        'Bank Tujuan': entry.data.bankTujuan,
+        'No. Rekening': entry.data.noRekening,
+        'Nominal': entry.data.nominal,
+        'Admin': adminFee,
+        'Total': entry.data.nominal + adminFee,
+        'Ref': entry.data.kodeReferensi,
+        'Cashier': entry.data.cabang || '-'
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan Transaksi");
+    XLSX.writeFile(wb, `Laporan_Alfathprint_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const exportToPDF = () => {
+    if (history.length === 0) {
+      alert("Tidak ada data riwayat untuk diekspor.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.text("Laporan Transaksi Alfathprint", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+
+    const tableData = history.map((entry, index) => {
+      const adminFee = entry.data.showAdminFee !== false ? (entry.data.admin || 0) : 0;
+      return [
+        index + 1,
+        entry.data.tanggal,
+        entry.data.namaPenerima,
+        entry.data.bankTujuan,
+        `Rp ${entry.data.nominal.toLocaleString('id-ID')}`,
+        `Rp ${adminFee.toLocaleString('id-ID')}`,
+        `Rp ${(entry.data.nominal + adminFee).toLocaleString('id-ID')}`
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 30,
+      head: [['No', 'Tanggal', 'Penerima', 'Bank', 'Nominal', 'Admin', 'Total']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillStyle: 'F', fillColor: [99, 102, 241] },
+      styles: { fontSize: 8 }
+    });
+
+    doc.save(`Laporan_Alfathprint_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const shareToWhatsApp = () => {
+    const adminFee = data.showAdminFee ? (data.admin || 0) : 0;
+    const total = data.nominal + adminFee;
+    
+    const message = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
+      `--------------------------------------%0A` +
+      `*Tanggal:* ${data.tanggal}%0A` +
+      `*Waktu:* ${data.waktu}%0A` +
+      `*Penerima:* ${data.namaPenerima}%0A` +
+      `*Bank:* ${data.bankTujuan}%0A` +
+      `*Rekening:* ${data.noRekening}%0A` +
+      `--------------------------------------%0A` +
+      `*Nominal:* Rp ${data.nominal.toLocaleString('id-ID')}%0A` +
+      (data.showAdminFee ? `*Biaya Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
+      `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
+      `--------------------------------------%0A` +
+      `*Ref:* ${data.kodeReferensi}%0A` +
+      `%0A_Terima kasih telah bertransaksi di ${data.namaToko}_`;
+
+    window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
   const isAdminUser = userProfile?.role === 'admin' || user?.email === 'peciwaru@gmail.com';
@@ -950,8 +1044,8 @@ export default function App() {
             </div>
 
             {/* Bluetooth Test Section */}
-            <div className="pt-4 border-t border-slate-50">
-               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Pengujian Perangkat</h3>
+            <div className="pt-4 border-t border-slate-50 space-y-4">
+               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Pengujian Perangkat</h3>
                <button 
                   onClick={testBluetooth}
                   disabled={isPrinting}
@@ -960,7 +1054,28 @@ export default function App() {
                   {isPrinting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Bluetooth className="w-5 h-5" />}
                   TES CETAK BLUETOOTH
                 </button>
-                <p className="text-[10px] text-slate-400 text-center mt-4 font-medium italic">Pastikan izin Bluetooth sudah diberikan ke browser.</p>
+                
+                <div 
+                  className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors"
+                  onClick={() => saveSettings({ showAdminFee: !data.showAdminFee })}
+                >
+                  <div className="flex items-center gap-4">
+                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.showAdminFee ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                       <Zap className="w-6 h-6" />
+                     </div>
+                     <div>
+                       <h4 className="font-bold text-slate-800 text-sm">Aktifkan Biaya Admin</h4>
+                       <p className="text-[10px] text-slate-400 font-medium">Tampilkan baris Biaya Admin di struk</p>
+                     </div>
+                  </div>
+                  <div 
+                    className={`w-12 h-6 rounded-full transition-colors relative ${data.showAdminFee ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.showAdminFee ? 'left-7' : 'left-1'}`}></div>
+                  </div>
+                </div>
+                
+                <p className="text-[10px] text-slate-400 text-center mt-2 font-medium italic">Pastikan izin Bluetooth sudah diberikan ke browser.</p>
             </div>
 
             {/* PWA Help Section */}
@@ -1012,6 +1127,22 @@ export default function App() {
             <div>
               <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Riwayat Struk</h2>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total: {history.length} Transaksi</p>
+            </div>
+            <div className="ml-auto flex gap-2">
+              <button 
+                onClick={exportToExcel}
+                className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100"
+                title="Ekspor Excel"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={exportToPDF}
+                className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center border border-rose-100"
+                title="Ekspor PDF"
+              >
+                <FileText className="w-5 h-5" />
+              </button>
             </div>
           </header>
 
@@ -1126,7 +1257,14 @@ export default function App() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="fixed bottom-0 left-0 right-0 bg-[#f2f4f7] px-4 pt-2 pb-6 pb-safe shrink-0 no-print z-20 flex gap-3 max-w-md mx-auto w-full">
+          <div className="fixed bottom-0 left-0 right-0 bg-[#f2f4f7] px-4 pt-2 pb-6 pb-safe shrink-0 no-print z-20 flex gap-2 max-w-md mx-auto w-full">
+            <button 
+              onClick={shareToWhatsApp}
+              className="flex-none bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-lg shadow-emerald-100"
+              title="Bagikan ke WhatsApp"
+            >
+              <Share2 className="w-6 h-6" />
+            </button>
             <button 
               onClick={handlePrintSystem}
               className="flex-none bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-sm"

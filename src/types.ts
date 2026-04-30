@@ -25,4 +25,6 @@ export interface ReceiptData {
   useFallbackAI?: boolean;
   aiEnabled?: boolean;
   scanEngine?: 'ai' | 'local';
+  customApiKey?: string;
+  showAdminFee?: boolean;
 }
