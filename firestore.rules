@@ -1,0 +1,100 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isDocAdmin(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.role == "admin";
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && (request.auth.token.email == "peciwaru@gmail.com" || isDocAdmin(request.auth.uid));
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+    
+    function isBranchKaryawan(branchId) {
+      return isVerifiedUser() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId == branchId &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == "active";
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['email', 'role', 'status', 'createdAt']) &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role is string && (data.role == "admin" || data.role == "karyawan") &&
+             data.status is string && (data.status == "pending" || data.status == "active" || data.status == "suspended") &&
+             data.createdAt is number &&
+             (data.keys().hasAny(['branchId']) ? (data.branchId is string && data.branchId.size() <= 128) : true);
+    }
+    
+    function isValidBranch(data) {
+      return data.keys().hasAll(['name', 'createdAt']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.createdAt is number &&
+             (data.keys().hasAny(['address']) ? (data.address is string && data.address.size() <= 200) : true);
+    }
+    
+    function isValidPrintHistory(data) {
+      return data.keys().hasAll(['userId', 'timestamp', 'nominal', 'namaPenerima', 'userEmail']) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.userEmail is string && data.userEmail.size() <= 100 &&
+             data.timestamp is number &&
+             data.nominal is number &&
+             data.namaPenerima is string && data.namaPenerima.size() <= 150 &&
+             (data.keys().hasAny(['bankTujuan']) ? (data.bankTujuan is string && data.bankTujuan.size() <= 100) : true) &&
+             (data.keys().hasAny(['receiptData']) ? data.receiptData is map : true);
+    }
+
+    match /users/{userId} {
+      allow get: if isVerifiedUser() && (request.auth.uid == userId || isAdmin());
+      allow list: if isVerifiedUser() && isAdmin();
+      
+      allow create: if isVerifiedUser() && isValidId(userId) && request.auth.uid == userId &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().email == request.auth.token.email &&
+                       incoming().role == "karyawan" &&
+                       incoming().status == "pending" &&
+                       incoming().createdAt == request.time.toMillis();
+                       
+      allow update: if isVerifiedUser() && isValidId(userId) && isValidUserProfile(incoming()) &&
+                       isAdmin() && incoming().createdAt == existing().createdAt && incoming().email == existing().email;
+                       
+      allow delete: if isAdmin();
+    }
+    
+    match /branches/{branchId} {
+      allow get: if isVerifiedUser() && (isAdmin() || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId == branchId));
+      allow list: if isVerifiedUser() && isAdmin();
+      
+      allow create: if isAdmin() && isValidId(branchId) && isValidBranch(incoming()) && incoming().createdAt == request.time.toMillis();
+      allow update: if isAdmin() && isValidId(branchId) && isValidBranch(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+      
+      match /printHistory/{historyId} {
+        allow get: if isVerifiedUser() && isValidId(branchId) && isValidId(historyId) && (isAdmin() || isBranchKaryawan(branchId));
+        allow list: if isVerifiedUser() && isValidId(branchId) && (isAdmin() || isBranchKaryawan(branchId));
+        
+        allow create: if isVerifiedUser() && isValidId(branchId) && isValidId(historyId) &&
+                         (isAdmin() || isBranchKaryawan(branchId)) &&
+                         isValidPrintHistory(incoming()) &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().userEmail == request.auth.token.email &&
+                         incoming().timestamp == request.time.toMillis();
+        allow update, delete: if isAdmin();
+      }
+    }
+  }
+}

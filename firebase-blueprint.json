@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "User Profile",
+      "description": "Stores user roles, branch association, and status (admin or karyawan).",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "karyawan"] },
+        "branchId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "active", "suspended"] },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["email", "role", "status", "createdAt"]
+    },
+    "branch": {
+      "title": "Branch",
+      "description": "Stores branch information (cabang).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["name", "createdAt"]
+    },
+    "printHistory": {
+      "title": "Print History",
+      "description": "Stores receipt print history.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "timestamp": { "type": "integer" },
+        "nominal": { "type": "number" },
+        "namaPenerima": { "type": "string" },
+        "bankTujuan": { "type": "string" },
+        "receiptData": { "type": "object" }
+      },
+      "required": ["userId", "timestamp", "nominal", "namaPenerima"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/userProfile" },
+      "description": "User profile with roles and branch access."
+    },
+    "/branches/{branchId}": {
+      "schema": { "$ref": "#/entities/branch" },
+      "description": "Stores all registered branches."
+    },
+    "/branches/{branchId}/printHistory/{historyId}": {
+      "schema": { "$ref": "#/entities/printHistory" },
+      "description": "Print history for a specific branch."
+    }
+  }
+}

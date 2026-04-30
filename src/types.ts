@@ -1,7 +1,15 @@
+export interface HistoryEntry {
+  id: string;
+  data: ReceiptData;
+  timestamp: number;
+}
+
 export interface ReceiptData {
   namaToko: string;
-  logoUrl?: string; // Tambahan logo
+  cabang?: string;
+  logoUrl?: string;
   tanggal: string;
+  // ... rest remains same
   waktu: string;
   kodeReferensi: string;
   bankTujuan: string;

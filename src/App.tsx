@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { parseReceipt } from './services/gemini';
 import { printViaBluetooth } from './services/bluetooth';
-import { ReceiptData } from './types';
+import { ReceiptData, HistoryEntry } from './types';
 import { ReceiptPreview } from './components/ReceiptPreview';
-import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download } from 'lucide-react';
+import { AdminPanel } from './components/AdminPanel';
+import { auth, db, loginWithGoogle, logout } from './services/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, setDoc, onSnapshot, collection, setDoc as firestoreSetDoc, addDoc } from 'firebase/firestore';
+import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert } from 'lucide-react';
 
 const INITIAL_DATA: ReceiptData = {
   namaToko: 'ALFATHPRINT',
@@ -28,16 +32,60 @@ const LAYOUTS = [
 ] as const;
 
 export default function App() {
-  const [view, setView] = useState<'home' | 'preview' | 'settings'>('home');
+  const [view, setView] = useState<'home' | 'preview' | 'settings' | 'history' | 'admin'>('home');
   const [data, setData] = useState<ReceiptData>(INITIAL_DATA);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  
+  // Auth & Profile State
+  const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [isAuthLoaded, setIsAuthLoaded] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('standard');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  // Load saved settings on mount
+  // Initialize Firebase Auth & Profile
   useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        const userRef = doc(db, 'users', u.uid);
+        try {
+          const docSnap = await getDoc(userRef);
+          if (!docSnap.exists()) {
+            const isDefaultAdmin = u.email === 'peciwaru@gmail.com';
+            const newProfile = {
+              email: u.email,
+              role: isDefaultAdmin ? 'admin' : 'karyawan',
+              status: isDefaultAdmin ? 'active' : 'pending',
+              createdAt: Date.now()
+            };
+            await setDoc(userRef, newProfile);
+            setUserProfile(newProfile);
+          } else {
+            onSnapshot(userRef, (snap) => {
+              setUserProfile(snap.data());
+            });
+          }
+        } catch (err) {
+          console.error("Profile fetch error:", err);
+        }
+      } else {
+        setUserProfile(null);
+      }
+      setIsAuthLoaded(true);
+    });
+    return () => unsub();
+  }, []);
+
+  // Sync settings when auth is loaded
+  useEffect(() => {
+    if (!isAuthLoaded || !user) return;
+    
     try {
       const savedSettings = localStorage.getItem('alfathprint_settings');
       if (savedSettings) {
@@ -45,15 +93,38 @@ export default function App() {
         setData(prev => ({
           ...prev,
           namaToko: settings.namaToko || prev.namaToko,
+          cabang: settings.cabang || prev.cabang,
           footerLine1: settings.footerLine1 || prev.footerLine1,
           footerLine2: settings.footerLine2 || prev.footerLine2,
           logoUrl: settings.logoUrl || prev.logoUrl,
         }));
       }
     } catch (e) {
-      console.error("Gagal memuat pengaturan:", e);
+      console.error("Gagal memuat pengaturan lokal:", e);
     }
+  }, [isAuthLoaded, user]);
 
+  // Sync history based on branch
+  useEffect(() => {
+    if (!user || !userProfile || userProfile.status !== 'active') return;
+    
+    if (userProfile.branchId) {
+      const branchRef = doc(db, 'branches', userProfile.branchId);
+      const historyCol = collection(branchRef, 'printHistory');
+      
+      const unsub = onSnapshot(historyCol, (snapshot) => {
+        const h = snapshot.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp })) as unknown as HistoryEntry[];
+        // Sort local since we don't have composite index for ordering yet
+        h.sort((a, b) => b.timestamp - a.timestamp);
+        setHistory(h);
+      }, (err) => {
+        console.error("Error fetching history:", err);
+      });
+      return () => unsub();
+    }
+  }, [userProfile]);
+
+  useEffect(() => {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -65,12 +136,35 @@ export default function App() {
   const saveSettings = (updatedData: Partial<ReceiptData>) => {
     const newSettings = {
       namaToko: updatedData.namaToko || data.namaToko,
+      cabang: updatedData.cabang || data.cabang,
       footerLine1: updatedData.footerLine1 || data.footerLine1,
       footerLine2: updatedData.footerLine2 || data.footerLine2,
       logoUrl: updatedData.logoUrl || data.logoUrl,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...updatedData }));
+  };
+
+  const addToHistory = async (receipt: ReceiptData) => {
+    if (!user || userProfile?.status !== 'active' || !userProfile?.branchId) return; // Only track for specific branch via Firebase
+
+    try {
+      const branchRef = doc(db, 'branches', userProfile.branchId);
+      const historyCol = collection(branchRef, 'printHistory');
+      
+      const historyId = Math.random().toString(36).substr(2, 9);
+      await firestoreSetDoc(doc(historyCol, historyId), {
+        userId: user.uid,
+        userEmail: user.email,
+        timestamp: Date.now(),
+        nominal: receipt.nominal || 0,
+        namaPenerima: receipt.namaPenerima || 'Tanpa Nama',
+        bankTujuan: receipt.bankTujuan || 'Lainnya',
+        receiptData: receipt
+      });
+    } catch (err) {
+      console.error("Failed to add to Firebase history:", err);
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,6 +227,7 @@ export default function App() {
   };
 
   const handlePrintSystem = () => {
+    addToHistory(data);
     window.print();
   };
 
@@ -140,12 +235,67 @@ export default function App() {
     setIsPrinting(true);
     try {
       await printViaBluetooth(data);
+      addToHistory(data);
     } catch (err) {
       // Error handled in bluetooth service via alert
     } finally {
       setIsPrinting(false);
     }
   };
+
+  if (!isAuthLoaded || isLoggingIn) {
+    return (
+      <div className="flex flex-col h-screen bg-[#f2f4f7] items-center justify-center text-slate-500">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mb-4" />
+        <p className="text-sm font-bold animate-pulse tracking-widest uppercase">Memuat sistem...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col h-screen bg-[#f2f4f7] items-center justify-center p-6">
+        <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center flex flex-col items-center">
+          <div className="bg-indigo-50 p-4 rounded-full mb-6">
+            <Printer className="w-12 h-12 text-indigo-600" />
+          </div>
+          <h1 className="text-3xl font-black italic tracking-tighter text-neutral-800 uppercase mb-2">Alfathprint</h1>
+          <p className="text-slate-500 font-medium text-sm mb-8 leading-relaxed">
+            Sistem Kasir & Struk Pintar<br/>Masuk untuk mengakses layanan.
+          </p>
+          <button 
+            onClick={async () => {
+              setIsLoggingIn(true);
+              try { await loginWithGoogle(); }
+              catch(e) {}
+              finally { setIsLoggingIn(false); }
+            }}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+          >
+            <LogIn className="w-5 h-5" /> Masuk dengan Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (userProfile?.status === 'pending') {
+    return (
+      <div className="flex flex-col h-screen bg-[#f2f4f7] items-center justify-center p-6 text-center">
+        <ShieldAlert className="w-16 h-16 text-amber-500 mb-6" />
+        <h2 className="text-xl font-black text-slate-800 mb-2 uppercase">Menunggu Persetujuan</h2>
+        <p className="text-slate-500 font-medium mb-8">
+          Akun Anda ({user.email}) sedang menunggu persetujuan Admin atau pengaturan Cabang.
+        </p>
+        <button 
+          onClick={logout}
+          className="bg-white border border-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest active:bg-slate-50"
+        >
+          Keluar
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f2f4f7] text-slate-800 font-sans">
@@ -160,6 +310,11 @@ export default function App() {
               <h1 className="text-3xl font-black italic tracking-tighter text-neutral-800 uppercase">Alfathprint</h1>
             </div>
             <div className="flex gap-2">
+              {userProfile?.role === 'admin' && (
+                <button onClick={() => setView('admin')} className="p-2 text-indigo-600 hover:text-indigo-800 transition-colors">
+                  <ShieldAlert className="w-6 h-6" />
+                </button>
+              )}
               <button onClick={testBluetooth} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                 <Bluetooth className="w-6 h-6" />
               </button>
@@ -253,21 +408,43 @@ export default function App() {
             {/* History Section */}
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-lg text-slate-800">Riwayat Cetak</h3>
-              <button className="text-sm text-indigo-600 font-semibold hover:underline">Lihat Semua</button>
+              <button 
+                onClick={() => setView('history')}
+                className="text-sm text-indigo-600 font-semibold hover:underline"
+              >
+                Lihat Semua
+              </button>
             </div>
 
             <div className="space-y-3">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center border border-slate-100">
-                     <FileText className="w-5 h-5 text-slate-400" />
+              {history.length > 0 ? (
+                history.slice(0, 5).map((entry) => (
+                  <div 
+                    key={entry.id} 
+                    onClick={() => {
+                        setData(entry.data);
+                        setView('preview');
+                    }}
+                    className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-transform"
+                  >
+                    <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center border border-slate-100">
+                      <FileText className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-slate-800 mb-0.5 uppercase">{entry.data.namaPenerima}</h4>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(entry.timestamp).toLocaleString('id-ID')}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-sm font-black text-indigo-600">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800 mb-0.5">LENIYASARI</h4>
-                    <p className="text-xs text-slate-400">2026-04-30 07:42</p>
-                  </div>
+                ))
+              ) : (
+                <div className="bg-white p-10 rounded-3xl border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center">
+                  <Clock className="w-10 h-10 text-slate-200 mb-3" />
+                  <p className="text-xs text-slate-400 font-medium leading-relaxed">Belum ada riwayat cetak.<br/>Mulai dengan upload struk!</p>
                 </div>
-              ))}
+              )}
             </div>
 
           </div>
@@ -328,15 +505,27 @@ export default function App() {
             {/* Shop Info */}
             <div className="space-y-5">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Profil Toko</h3>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Toko</label>
-                <input 
-                  type="text" 
-                  value={data.namaToko}
-                  onChange={(e) => saveSettings({ namaToko: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  placeholder="Contoh: ALFATHPRINT"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Toko</label>
+                  <input 
+                    type="text" 
+                    value={data.namaToko}
+                    onChange={(e) => saveSettings({ namaToko: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="Contoh: ALFATHPRINT"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">ID Cabang</label>
+                  <input 
+                    type="text" 
+                    value={data.cabang || ''}
+                    onChange={(e) => saveSettings({ cabang: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="Contoh: CAB01"
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Teks Bawah 1</label>
@@ -371,8 +560,96 @@ export default function App() {
                 </button>
                 <p className="text-[10px] text-slate-400 text-center mt-4 font-medium italic">Pastikan izin Bluetooth sudah diberikan ke browser.</p>
             </div>
+
+            {/* Logout button */}
+            <div className="pt-4 border-t border-slate-50">
+               <button 
+                  onClick={logout}
+                  className="w-full bg-white border border-rose-100 active:bg-rose-50 text-rose-500 py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-colors uppercase tracking-widest"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Keluar Akun
+                </button>
+            </div>
           </div>
         </div>
+      ) : view === 'history' ? (
+        // --- ALL HISTORY SCREEN ---
+        <div className="flex flex-col h-screen bg-slate-50 no-print overflow-hidden">
+          <header className="px-5 py-6 bg-white border-b border-slate-100 flex items-center shrink-0 gap-4">
+            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Riwayat Struk</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total: {history.length} Transaksi</p>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto p-5 space-y-3 overscroll-contain">
+            {history.length > 0 ? (
+              history.map((entry) => (
+                <div 
+                  key={entry.id} 
+                  onClick={() => {
+                      setData(entry.data);
+                      setView('preview');
+                  }}
+                  className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-transform"
+                >
+                  <div className="bg-slate-50 w-12 h-12 rounded-2xl flex items-center justify-center border border-slate-50">
+                    <History className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-slate-800 mb-0.5 uppercase">{entry.data.namaPenerima}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-loose">
+                      {entry.data.bankTujuan} • {new Date(entry.timestamp).toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                     <p className="text-sm font-black text-slate-800">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
+                     {entry.data.cabang && <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase">{entry.data.cabang}</span>}
+                  </div>
+                </div>
+              ))
+            ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                  <History className="w-16 h-16 text-slate-200 mb-4" />
+                  <p className="text-sm font-bold text-slate-400">TIDAK ADA DATA</p>
+                </div>
+            )}
+          </div>
+          
+          <div className="p-5 bg-white border-t border-slate-100 no-print">
+            <button 
+              onClick={() => {
+                if(confirm("Hapus semua riwayat?")) {
+                   setHistory([]);
+                   localStorage.removeItem('alfathprint_history');
+                }
+              }}
+              className="w-full py-4 rounded-2xl text-xs font-black text-rose-500 border-2 border-rose-50 hover:bg-rose-50 uppercase tracking-widest transition-colors"
+            >
+              Kosongkan Riwayat
+            </button>
+          </div>
+        </div>
+      ) : view === 'admin' ? (
+         // --- ADMIN SCREEN ---
+         <div className="flex flex-col h-screen bg-white no-print overflow-hidden">
+           <header className="px-5 py-6 flex items-center shrink-0 gap-4 border-b border-slate-100">
+             <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500">
+               <ArrowLeft className="w-6 h-6" />
+             </button>
+             <div>
+               <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Admin Area</h2>
+               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Manajemen Karyawan & Cabang</p>
+             </div>
+           </header>
+           <div className="flex-1 overflow-hidden">
+             <AdminPanel />
+           </div>
+         </div>
       ) : (
         // --- PREVIEW SCREEN ---
         <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f7]">
