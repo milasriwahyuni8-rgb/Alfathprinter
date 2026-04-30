@@ -33,11 +33,11 @@ const INITIAL_DATA: ReceiptData = {
 };
 
 const LAYOUTS = [
-  { id: 'standard', name: '1. Standard' },
-  { id: 'modern', name: '2. Modern' },
-  { id: 'bank', name: '3. Bank Style' },
-  { id: 'elegant', name: '4. Elegant' },
-  { id: 'pro', name: '5. Pro (Recommended)' },
+  { id: 'pro', name: '1. Pro (Default)' },
+  { id: 'standard', name: '2. Standard' },
+  { id: 'modern', name: '3. Modern' },
+  { id: 'bank', name: '4. Bank Style' },
+  { id: 'elegant', name: '5. Elegant' },
 ] as const;
 
 export default function App() {
@@ -53,7 +53,7 @@ export default function App() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('standard');
+  const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('pro');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
 
