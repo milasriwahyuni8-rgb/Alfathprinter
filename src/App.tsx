@@ -243,6 +243,8 @@ export default function App() {
     }
   };
 
+  const isAdminUser = userProfile?.role === 'admin' || user?.email === 'peciwaru@gmail.com';
+
   if (!isAuthLoaded || isLoggingIn) {
     return (
       <div className="flex flex-col h-screen bg-[#f2f4f7] items-center justify-center text-slate-500">
@@ -310,7 +312,7 @@ export default function App() {
               <h1 className="text-3xl font-black italic tracking-tighter text-neutral-800 uppercase">Alfathprint</h1>
             </div>
             <div className="flex gap-2">
-              {userProfile?.role === 'admin' && (
+              {isAdminUser && (
                 <button onClick={() => setView('admin')} className="p-2 text-indigo-600 hover:text-indigo-800 transition-colors">
                   <ShieldAlert className="w-6 h-6" />
                 </button>
@@ -560,6 +562,19 @@ export default function App() {
                 </button>
                 <p className="text-[10px] text-slate-400 text-center mt-4 font-medium italic">Pastikan izin Bluetooth sudah diberikan ke browser.</p>
             </div>
+
+            {/* Admin Area Button (Settings) */}
+            {isAdminUser && (
+              <div className="pt-4 border-t border-slate-50">
+                <button 
+                  onClick={() => setView('admin')}
+                  className="w-full bg-indigo-50 border border-indigo-100 active:bg-indigo-100 text-indigo-600 py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-colors uppercase tracking-widest"
+                >
+                  <ShieldAlert className="w-5 h-5" />
+                  Buka Panel Admin
+                </button>
+              </div>
+            )}
 
             {/* Logout button */}
             <div className="pt-4 border-t border-slate-50">
