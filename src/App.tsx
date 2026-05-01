@@ -519,7 +519,7 @@ export default function App() {
     doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 28);
     doc.text(`Total Transaksi: ${history.length}`, 14, 33);
 
-    const showAdminColumn = history.some(h => h.data.showAdminFee && (h.data.admin || 0) > 0);
+    const showAdminColumn = history.some(h => h.data.showAdminFee);
     const headers = ['No', 'Tanggal', 'Penerima', 'Bank', 'Nominal'];
     if (showAdminColumn) headers.push('Admin');
     headers.push('Total');

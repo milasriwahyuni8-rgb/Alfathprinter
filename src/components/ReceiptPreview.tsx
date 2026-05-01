@@ -213,7 +213,18 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
          </div>
       </div>
 
-      <div className="bg-gray-200 print:bg-gray-200/50 print:border-y print:border-black print:border-dashed py-2 px-3 flex flex-col items-center justify-center font-bold my-4 rounded-sm">
+      <div className="bg-gray-200 print:bg-gray-200/50 print:border-y print:border-black print:border-dashed py-2 px-3 flex flex-col items-center justify-center font-bold my-2 rounded-sm">
+         <div className="w-full flex justify-between text-[10px] items-center mb-1">
+           <span className="opacity-60 uppercase">NOMINAL</span>
+           <div className="w-24"><InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" /></div>
+         </div>
+         {data.showAdminFee && (
+           <div className="w-full flex justify-between text-[10px] items-center mb-1">
+             <span className="opacity-60 uppercase">ADMIN</span>
+             <div className="w-24"><InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="right" /></div>
+           </div>
+         )}
+         <div className="w-full h-[1px] bg-black/10 my-1"></div>
          <span className="uppercase tracking-widest text-[12px]">TOTAL BAYAR</span>
          <div className="w-full mt-1 text-base">
            <InlineCurrencyInput value={total} onChange={() => {}} align="center" isBold />
@@ -317,7 +328,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       </div>
       {data.showAdminFee && (
         <div className="flex items-center font-bold">
-           <span className="shrink-0 w-[120px] select-none">BIAYA ADMIN</span>
+           <span className="shrink-0 w-[120px] select-none uppercase">ADMIN FEE</span>
            <span className="select-none mr-2">:</span>
            <div className="flex-1">
              <InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="left" isBold />

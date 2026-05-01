@@ -1,7 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
 function getAI(apiKey: string) {
-  return new GoogleGenAI({ apiKey: apiKey.trim() });
+  return new GoogleGenAI({ 
+    apiKey: apiKey.trim() 
+  });
 }
 
 export async function parseReceiptFromBase64(base64Data: string, mimeType: string, customKeys?: string) {
@@ -39,27 +41,23 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   for (let i = 0; i < keyList.length; i++) {
     const currentKey = keyList[i];
     try {
-      const ai = getAI(currentKey);
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+      const client = getAI(currentKey);
+      const response = await client.models.generateContent({
+        model: "gemini-2.0-flash",
         contents: [
           {
             parts: [
-              { text: `Ekstrak data transaksi dari gambar bukti transfer bank (Indonesian Bank Receipt) secara akurat dan sangat cepat.
-                Pahami istilah perbankan Indonesia seperti "Jumlah", "Nominal", "Transfer Keluar", "Ke Rekening", "Penerima", "Ref", dsb.
+              { text: `Ekstrak data Bukti Transfer Bank (JSON murni):
+                - tanggal (YYYY-MM-DD)
+                - waktu (HH:mm)
+                - kodeReferensi (Ref No/ID/RRN)
+                - bankTujuan (BCA/BRI/Mandiri/dsb)
+                - noRekening (Angka saja)
+                - namaPenerima (HURUF KAPITAL)
+                - nominal (Jumlah Transfer Asli, angka bulat)
+                - admin (Biaya Admin, angka bulat, else 0)
 
-                Output WAJIB berupa JSON murni dengan schema: 
-                - "tanggal": string (format: YYYY-MM-DD)
-                - "waktu": string (format: HH:mm atau HH:mm:ss)
-                - "kodeReferensi": string (cari "No. Referensi", "ID Transaksi", "RRN", atau "No. Transaksi")
-                - "bankTujuan": string (nama bank, misal "BCA", "BRI", "MANDIRI", "BNI", "BSI", "DANAMON", "SEABANK", dsb)
-                - "noRekening": string (angka saja)
-                - "namaPenerima": string (nama lengkap penerima, HURUF KAPITAL)
-                - "nominal": number (JUMLAH TRANSFER ASLI, abaikan biaya admin jika dipisah. Jika hanya ada TOTAL, kurangi biaya admin jika diketahui)
-                - "admin": number (Biaya admin jika tertera jelas, misal 2500 atau 6500. Jika tidak ada, isi 0)
-
-                PENTING: Bedakan antara "Jumlah Transfer" (Nominal) dan "Total Bayar" (Nominal + Admin).
-                Hanya angka bulat. Gunakan kecepatan maksimal.` },
+                Abaikan total jika nominal dan admin terpisah. Fokus pada akurasi data bank. Sangat cepat.` },
               {
                 inlineData: {
                   data: base64Data.split(",")[1],
@@ -74,7 +72,9 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
         }
       });
 
-      return JSON.parse(response.text || "{}");
+      // Handle the response properly for @google/genai SDK
+      const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return JSON.parse(text || "{}");
     } catch (error: any) {
       console.warn(`Key #${i + 1} failed:`, error.message);
       lastError = error;
@@ -88,7 +88,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
         } catch (e) {}
       }
 
-      // If it's NOT a quota error or bad key, stop trying other keys (it might be a structural error)
+      // If it's NOT a quota error or bad key, stop trying other keys
       const isQuota = errorMessage.toLowerCase().includes('quota') || errorMessage.includes('429');
       const isInvalidKey = errorMessage.includes('API_KEY_INVALID') || errorMessage.includes('API Key must be set');
       
@@ -96,7 +96,6 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
         break; 
       }
       
-      // If we have more keys, continue to next iteration
       if (i < keyList.length - 1) {
         console.log("Switching to next API Key...");
         continue; 
@@ -142,12 +141,12 @@ export async function testGeminiKey(customKeys: string) {
   let lastError: any = null;
   for (let i = 0; i < keyList.length; i++) {
     try {
-      const ai = getAI(keyList[i]);
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+      const client = getAI(keyList[i]);
+      const response = await client.models.generateContent({
+        model: "gemini-2.0-flash",
         contents: "Say 'ok'"
       });
-      return !!response.text;
+      return !!response.candidates?.[0]?.content?.parts?.[0]?.text;
     } catch (error: any) {
       lastError = error;
     }
