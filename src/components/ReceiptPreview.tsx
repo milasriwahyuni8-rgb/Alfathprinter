@@ -118,7 +118,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
           <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
         </div>
       </div>
-      {data.showAdminFee && (
+      {data.showAdminFee && (data.admin || 0) > 0 && (
         <div className="flex justify-between items-center gap-1 py-0.25">
           <span className="shrink-0 select-none text-[10px] opacity-70">ADMIN</span>
           <div className="flex-1 font-mono text-xs">
@@ -315,7 +315,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
            <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="left" isBold />
          </div>
       </div>
-      {data.showAdminFee && (
+      {data.showAdminFee && (data.admin || 0) > 0 && (
         <div className="flex items-center font-bold">
            <span className="shrink-0 w-[120px] select-none">BIAYA ADMIN</span>
            <span className="select-none mr-2">:</span>
@@ -404,7 +404,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
             <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
           </div>
         </div>
-        {data.showAdminFee && (
+        {data.showAdminFee && (data.admin || 0) > 0 && (
           <div className="flex justify-between items-center text-[11px]">
             <span className="opacity-60">Service Fee</span>
             <div className="w-24">
@@ -501,7 +501,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
           <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
         </div>
       </div>
-      {data.showAdminFee && (
+      {data.showAdminFee && (data.admin || 0) > 0 && (
         <div className="flex justify-between items-center gap-2 mb-1">
           <span className="shrink-0 font-bold">ADMIN</span>
           <div className="flex-1">
@@ -606,7 +606,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
              <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" isBold />
           </div>
         </div>
-        {data.showAdminFee && (
+        {data.showAdminFee && (data.admin || 0) > 0 && (
           <div className="flex justify-between font-bold uppercase text-[12px]">
             <span className="select-none opacity-90">ADMIN</span>
             <div className="w-28 text-right">

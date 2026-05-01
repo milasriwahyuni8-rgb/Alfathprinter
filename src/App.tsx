@@ -544,11 +544,14 @@ export default function App() {
   };
 
   const shareDigitalReceipt = async () => {
-    if (!receiptRef.current) return;
+    if (!receiptRef.current) {
+       alert("Gagal mengambil gambar struk. Pastikan struk terlihat di layar.");
+       return;
+    }
     
     setIsPrinting(true);
     try {
-      // Small delay to ensure any pending renders (like input focus changes) are settled
+      // Small delay to ensure any pending renders settling
       await new Promise(resolve => setTimeout(resolve, 150));
 
       // Create a high-quality capture
@@ -611,7 +614,7 @@ export default function App() {
         `*Rekening:* ${data.noRekening}%0A` +
         `--------------------------------------%0A` +
         `*Nominal:* Rp ${data.nominal.toLocaleString('id-ID')}%0A` +
-        (data.showAdminFee ? `*Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
+        (data.showAdminFee && adminFee > 0 ? `*Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
         `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
         `--------------------------------------%0A` +
         `*Ref:* ${data.kodeReferensi}%0A` +
