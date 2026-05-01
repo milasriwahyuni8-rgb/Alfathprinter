@@ -512,7 +512,7 @@ export default function App() {
       head: [['No', 'Tanggal', 'Penerima', 'Bank', 'Nominal', 'Admin', 'Total']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillStyle: 'F', fillColor: [99, 102, 241] },
+      headStyles: { fillColor: [99, 102, 241] },
       styles: { fontSize: 8 }
     });
 
@@ -524,46 +524,56 @@ export default function App() {
     
     setIsPrinting(true);
     try {
+      // Small delay to ensure any pending renders (like input focus changes) are settled
+      await new Promise(resolve => setTimeout(resolve, 150));
+
       // Create a high-quality capture
       const dataUrl = await toPng(receiptRef.current, { 
         cacheBust: true, 
-        pixelRatio: 4, 
+        pixelRatio: 3, // 3 is usually enough for mobile clarity without huge file size
         backgroundColor: '#ffffff',
         style: {
           transform: 'scale(1)',
-          borderRadius: '0'
+          borderRadius: '0',
+          margin: '0',
+          padding: '0'
         }
       });
       
+      const adminFee = data.showAdminFee ? (data.admin || 0) : 0;
+      const total = data.nominal + adminFee;
+
       // Prepare for sharing
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `Struk_${data.namaPenerima}_${data.tanggal.replace(/-/g, '')}.png`, { type: 'image/png' });
+
+      // Build text message for context
+      const textSummary = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
+        `--------------------------------------%0A` +
+        `*Penerima:* ${data.namaPenerima}%0A` +
+        `*Total:* Rp ${total.toLocaleString('id-ID')}%0A` +
+        `--------------------------------------%0A` +
+        `%0A_Bukti Transfer Digital_`;
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: `Struk ${data.namaToko}`,
-          text: `Bukti Transfer an. ${data.namaPenerima} - Rp ${(data.nominal + (data.showAdminFee ? data.admin : 0)).toLocaleString('id-ID')}`
+          text: `Bukti Transfer an. ${data.namaPenerima} - Rp ${total.toLocaleString('id-ID')}`
         });
       } else {
-        // Fallback for desktop/unsupported browsers
+        // Fallback for desktop/unsupported browsers: Download + WhatsApp Link
         const link = document.createElement('a');
-        link.download = `Struk_Alfathprint_${data.namaPenerima}.png`;
+        link.download = `Struk_Digital_${data.namaPenerima}.png`;
         link.href = dataUrl;
         link.click();
         
-        // Also share text summary for context
-        const adminFee = data.showAdminFee ? (data.admin || 0) : 0;
-        const total = data.nominal + adminFee;
-        const message = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
-          `--------------------------------------%0A` +
-          `*Penerima:* ${data.namaPenerima}%0A` +
-          `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
-          `--------------------------------------%0A` +
-          `%0A_Gambar struk digital telah diunduh, silakan lampirkan._`;
-        
-        window.open(`https://wa.me/?text=${message}`, '_blank');
+        // Also open WhatsApp with text
+        window.open(`https://wa.me/?text=${textSummary}`, '_blank');
       }
+      
+      // Add to history after successful "share trigger"
+      addToHistory(data);
     } catch (err: any) {
       console.error("Digital share error:", err);
       // Final fallback to text
@@ -571,18 +581,17 @@ export default function App() {
       const total = data.nominal + adminFee;
       const message = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
         `--------------------------------------%0A` +
-        `*Tanggal:* ${data.tanggal}%0A` +
-        `*Waktu:* ${data.waktu}%0A` +
+        `*Tgl/Jam:* ${data.tanggal} ${data.waktu}%0A` +
         `*Penerima:* ${data.namaPenerima}%0A` +
         `*Bank:* ${data.bankTujuan}%0A` +
         `*Rekening:* ${data.noRekening}%0A` +
         `--------------------------------------%0A` +
         `*Nominal:* Rp ${data.nominal.toLocaleString('id-ID')}%0A` +
-        (data.showAdminFee ? `*Biaya Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
+        (data.showAdminFee ? `*Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
         `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
         `--------------------------------------%0A` +
         `*Ref:* ${data.kodeReferensi}%0A` +
-        `%0A_Terima kasih telah bertransaksi di ${data.namaToko}_`;
+        `%0A_Terima kasih telah bertransaksi_`;
 
       window.open(`https://wa.me/?text=${message}`, '_blank');
     } finally {

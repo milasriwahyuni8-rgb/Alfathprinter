@@ -49,119 +49,109 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderStandard = () => (
     <>
-      <div className="text-center font-bold text-base mb-1 uppercase">
+      <div className="text-center font-bold text-sm mb-1 uppercase">
         <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
       </div>
       
-      <div className="text-center mb-1 select-none font-bold">
+      <div className="text-center mb-1 select-none font-bold text-xs opacity-40">
         {'='.repeat(32)}
       </div>
 
-      <div className="flex justify-between items-center gap-2">
-        <span className="shrink-0 select-none">TANGGAL</span>
+      <div className="flex justify-between items-center gap-1 leading-none py-0.5">
+        <span className="shrink-0 select-none text-[11px] opacity-70">TANGGAL</span>
         <div className="flex-1">
            <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="right" />
         </div>
       </div>
-      <div className="flex justify-between items-center gap-2">
-        <span className="shrink-0 select-none">WAKTU</span>
+      <div className="flex justify-between items-center gap-1 leading-none py-0.5">
+        <span className="shrink-0 select-none text-[11px] opacity-70">WAKTU</span>
         <div className="flex-1">
           <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
         </div>
       </div>
-      <div className="flex justify-between items-center gap-2">
-        <span className="shrink-0 select-none uppercase">REFERENSI</span>
+      <div className="flex justify-between items-center gap-1 leading-none py-0.5">
+        <span className="shrink-0 select-none text-[11px] opacity-70 uppercase tracking-tighter">REFERENSI</span>
         <div className="flex-1">
           <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="right" isBold />
         </div>
       </div>
       
-      <div className="text-center my-1 select-none font-bold">
-        {'-'.repeat(32)}
-      </div>
-
-      <div className="text-center my-1 select-none font-bold">
-        {'-'.repeat(32)}
-      </div>
-
-      <div className="text-center mb-1 select-none font-bold">
+      <div className="text-center my-0.5 select-none font-bold text-xs opacity-20">
         {'-'.repeat(32)}
       </div>
 
       {data.showPengirim && (
-        <div className="w-full flex justify-between items-center gap-1">
-          <span className="shrink-0 whitespace-nowrap select-none uppercase">PENGIRIM</span>
+        <div className="w-full flex justify-between items-center gap-1 py-0.5">
+          <span className="shrink-0 whitespace-nowrap select-none text-[11px] opacity-70 uppercase">PENGIRIM</span>
           <div className="flex-1 w-full overflow-hidden">
             <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="right" />
           </div>
         </div>
       )}
 
-      <div className="text-center select-none font-bold pt-1 uppercase">DATA PENERIMA</div>
-      <div className="w-full flex justify-between items-center gap-1">
-         <span className="shrink-0 whitespace-nowrap select-none">BANK TUJUAN</span>
+      <div className="text-center select-none font-black pt-1 uppercase text-[10px] tracking-widest opacity-60">PENERIMA</div>
+      <div className="w-full flex justify-between items-center gap-1 py-0.5">
+         <span className="shrink-0 whitespace-nowrap select-none text-[11px] opacity-70">BANK</span>
          <div className="flex-1 w-full overflow-hidden">
            <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="right" />
          </div>
       </div>
-      <div className="w-full flex justify-between items-center gap-1">
-         <span className="shrink-0 whitespace-nowrap select-none">NO REKENING</span>
+      <div className="w-full flex justify-between items-center gap-1 py-0.5">
+         <span className="shrink-0 whitespace-nowrap select-none text-[11px] opacity-70">REKENING</span>
          <div className="flex-1 w-full">
            <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="right" />
          </div>
       </div>
-      <div className="w-full flex justify-between items-center gap-1">
-         <span className="shrink-0 whitespace-nowrap select-none">PENERIMA</span>
+      <div className="w-full flex justify-between items-center gap-1 py-0.5">
+         <span className="shrink-0 whitespace-nowrap select-none text-[11px] opacity-70">NAMA</span>
          <div className="flex-1 w-full overflow-hidden">
-            <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" />
+            <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" isBold />
          </div>
       </div>
 
-      <div className="text-center my-1 select-none font-bold">
+      <div className="text-center my-0.5 select-none font-bold text-xs opacity-20">
         {'-'.repeat(32)}
       </div>
 
-      <div className="flex justify-between items-center gap-2">
-        <span className="shrink-0 select-none">NOMINAL</span>
-        <div className="flex-1">
+      <div className="flex justify-between items-center gap-1 py-0.5">
+        <span className="shrink-0 select-none text-[11px] opacity-70">NOMINAL</span>
+        <div className="flex-1 font-mono">
           <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
         </div>
       </div>
       {data.showAdminFee && (
-        <div className="flex justify-between items-center gap-2">
-          <span className="shrink-0 select-none">ADMIN</span>
-          <div className="flex-1">
+        <div className="flex justify-between items-center gap-1 py-0.5">
+          <span className="shrink-0 select-none text-[11px] opacity-70">ADMIN</span>
+          <div className="flex-1 font-mono">
             <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" />
           </div>
         </div>
       )}
 
-      <div className="text-center my-1 select-none font-bold">
+      <div className="text-center my-0.5 select-none font-bold text-xs opacity-40">
         {'='.repeat(32)}
       </div>
 
-      <div className="flex justify-between items-center gap-2 font-bold">
-        <span className="shrink-0 select-none">TOTAL</span>
+      <div className="flex justify-between items-center gap-1 leading-none py-1">
+        <span className="shrink-0 select-none font-bold text-xs">TOTAL</span>
         <div className="flex-1">
           <InlineCurrencyInput value={total} onChange={() => {}} align="right" isBold />
         </div>
       </div>
 
-      <div className="text-center my-1 select-none font-bold">
+      <div className="text-center mb-1 select-none font-bold text-xs opacity-40">
         {'='.repeat(32)}
       </div>
       
-      <div className="text-center mt-2 mb-1 font-bold">
-        <div className="flex items-center justify-center gap-1">
-           <span className="select-none">**</span>
+      <div className="text-center mt-2 mb-0.5">
+        <div className="flex items-center justify-center gap-1 uppercase tracking-tighter">
            <InlineInput value={data.status || ''} onChange={v => onChange({...data, status: v})} align="center" isBold uppercase />
-           <span className="select-none">**</span>
         </div>
       </div>
-      <div className="text-center mb-1">
+      <div className="text-center text-[10px] leading-tight">
          <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
       </div>
-      <div className="text-center font-bold">
+      <div className="text-center font-bold text-[11px] leading-tight">
          <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
       </div>
     </>
@@ -556,96 +546,94 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   );
 
   const renderDigital = () => (
-    <div className="flex flex-col gap-[2px] text-[12px] leading-tight font-mono">
-      <div className="text-center font-bold text-base mb-2 uppercase tracking-wider">
+    <div className="flex flex-col gap-0 text-[11px] leading-tight font-mono">
+      <div className="text-center font-bold text-sm mb-1 uppercase tracking-wider">
         <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
       </div>
-      <div className="text-center select-none mb-2">{'='.repeat(32)}</div>
+      <div className="text-center select-none opacity-40">{'='.repeat(32)}</div>
       
-      <div className="flex justify-between uppercase">
-        <span className="shrink-0 select-none">TANGGAL</span>
+      <div className="flex justify-between uppercase py-0.5">
+        <span className="shrink-0 select-none opacity-70">TANGGAL</span>
         <div className="flex-1 w-full truncate text-right">
            <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="right" />
         </div>
       </div>
-      <div className="flex justify-between uppercase">
-        <span className="shrink-0 select-none">WAKTU</span>
+      <div className="flex justify-between uppercase py-0.5">
+        <span className="shrink-0 select-none opacity-70">WAKTU</span>
         <div className="flex-1 w-full truncate text-right">
            <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
         </div>
       </div>
       
-      <div className="text-center select-none my-1">{'-'.repeat(32)}</div>
+      <div className="text-center select-none opacity-20 my-0.5">{'-'.repeat(32)}</div>
       
-      <div className="text-center font-bold uppercase mb-1 select-none">KODE REFERENSI</div>
-      <div className="text-center break-all font-bold mb-2">
+      <div className="text-center font-bold uppercase mb-0.5 select-none opacity-60 text-[10px]">REFERENSI</div>
+      <div className="text-center break-all font-bold mb-1">
         <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold uppercase />
       </div>
       
-      <div className="text-center select-none mb-1">{'-'.repeat(32)}</div>
+      <div className="text-center select-none opacity-20 my-0.5">{'-'.repeat(32)}</div>
       
-      <div className="text-center font-bold uppercase mb-2 select-none">DATA PENERIMA</div>
-      <div className="flex justify-between gap-2 uppercase">
-        <span className="shrink-0 select-none">BANK TUJUAN</span>
-        <div className="flex-1 w-full truncate text-right">
+      <div className="text-center font-black uppercase mb-1 select-none opacity-60 text-[10px]">PENERIMA</div>
+      <div className="flex justify-between gap-2 uppercase py-0.5">
+        <span className="shrink-0 select-none opacity-70">BANK</span>
+        <div className="flex-1 w-full truncate text-right text-xs">
            <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="right" uppercase />
         </div>
       </div>
-      <div className="flex justify-between gap-2 uppercase">
-        <span className="shrink-0 select-none">NO REKENING</span>
+      <div className="flex justify-between gap-2 uppercase py-0.5">
+        <span className="shrink-0 select-none opacity-70">REKENING</span>
         <div className="flex-1 w-full truncate text-right">
            <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="right" />
         </div>
       </div>
-      <div className="flex justify-between gap-2 uppercase">
-        <span className="shrink-0 select-none">PENERIMA</span>
+      <div className="flex justify-between gap-2 uppercase py-0.5">
+        <span className="shrink-0 select-none opacity-70">NAMA</span>
         <div className="flex-1 w-full truncate text-right">
            <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" isBold uppercase />
         </div>
       </div>
       
-      <div className="text-center select-none my-1">{'-'.repeat(32)}</div>
+      <div className="text-center select-none opacity-20 my-0.5">{'-'.repeat(32)}</div>
       
-      <div className="flex justify-between font-bold uppercase">
-        <span className="select-none">NOMINAL</span>
+      <div className="flex justify-between font-bold uppercase py-0.5">
+        <span className="select-none opacity-70">NOMINAL</span>
         <div className="w-24">
            <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" isBold />
         </div>
       </div>
       {data.showAdminFee && (
-        <div className="flex justify-between font-bold uppercase">
-          <span className="select-none">ADMIN</span>
+        <div className="flex justify-between font-bold uppercase py-0.5">
+          <span className="select-none opacity-70">ADMIN</span>
           <div className="w-24">
              <InlineCurrencyInput value={data.admin} onChange={v => onChange({...data, admin: v})} align="right" isBold />
           </div>
         </div>
       )}
       
-      <div className="text-center select-none">{'='.repeat(32)}</div>
-      <div className="flex justify-between font-bold uppercase">
-        <span className="select-none">TOTAL</span>
+      <div className="text-center select-none opacity-40">{'='.repeat(32)}</div>
+      <div className="flex justify-between font-bold uppercase py-1">
+        <span className="select-none text-xs">TOTAL</span>
         <div className="w-28 text-right">
            <span className="mr-1">Rp</span>
-           <span className="text-base">{new Intl.NumberFormat('id-ID').format(total)}</span>
+           <span className="text-sm">{new Intl.NumberFormat('id-ID').format(total)}</span>
         </div>
       </div>
-      <div className="text-center select-none">{'='.repeat(32)}</div>
+      <div className="text-center select-none opacity-40">{'='.repeat(32)}</div>
       
-      <div className="mt-4 text-center space-y-1">
-        <div className="font-bold uppercase tracking-wider">
+      <div className="mt-3 text-center space-y-0.5">
+        <div className="font-bold uppercase tracking-wider mb-1">
            <div className="flex items-center justify-center gap-1">
-              <span className="select-none">**</span>
               <InlineInput value={data.status || 'TRANSAKSI BERHASIL'} onChange={v => onChange({...data, status: v})} align="center" isBold uppercase />
-              <span className="select-none">**</span>
            </div>
         </div>
-        <div className="text-[10px] uppercase opacity-70">
+        <div className="text-[10px] uppercase opacity-70 scale-90 origin-center">
            <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
         </div>
-        <div className="font-bold text-base mt-2 uppercase tracking-widest">
+        <div className="font-bold text-xs mt-1 uppercase tracking-widest">
            <InlineInput value="TERIMA KASIH" onChange={() => {}} align="center" isBold />
         </div>
-        <div className="text-[10px] opacity-50 uppercase mt-1">
+        <div className="text-[9px] opacity-40 uppercase mt-1">
            <div className="flex items-center justify-center gap-1">
              <span className="select-none">TID:</span>
              <div className="w-16">
@@ -660,11 +648,11 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   return (
     <div 
       ref={ref}
-      className={`relative w-[310px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-4 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
+      className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-2 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
       style={{ fontFamily }}
     >
-      <div className="p-5 md:p-6 pb-8">
-        <div className="receipt-content flex flex-col gap-[1px] relative z-10 bg-white">
+      <div className="p-4 md:p-5 pb-6">
+        <div className="receipt-content flex flex-col gap-0.5 relative z-10 bg-white">
         {data.logoUrl && (
           <div className="flex justify-center mb-4 no-print-logo">
             <img src={data.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />

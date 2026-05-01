@@ -17,6 +17,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   
   // If no custom keys, try env vars
   if (keyList.length === 0) {
+    // @ts-ignore
     const envKey = import.meta.env.VITE_GEMINI_API_KEY || "";
     if (envKey) keyList.push(envKey);
     else {
