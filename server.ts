@@ -29,18 +29,23 @@ async function startServer() {
     if (req.method === 'GET') {
       return res.redirect("/");
     }
+    // Accept multiple field names for better compatibility
     next();
-  }, upload.single('receipt'), (req: any, res) => {
+  }, upload.fields([{ name: 'receipt', maxCount: 1 }, { name: 'files', maxCount: 1 }, { name: 'file', maxCount: 1 }, { name: 'image', maxCount: 1 }]), (req: any, res) => {
     console.log("Processing shared file...");
-    if (!req.file) {
-      console.log("No file found in share-receiver request");
+    
+    // Find the file in any of the possible fields
+    const file = req.files?.receipt?.[0] || req.files?.files?.[0] || req.files?.file?.[0] || req.files?.image?.[0];
+
+    if (!file) {
+      console.log("No file found in share-receiver request. Fields found:", Object.keys(req.files || {}));
       return res.redirect("/");
     }
     
     const sharedId = Math.random().toString(36).substring(2, 11);
     sharedContents.set(sharedId, {
-      buffer: req.file.buffer,
-      mimetype: req.file.mimetype
+      buffer: file.buffer,
+      mimetype: file.mimetype
     });
     
     setTimeout(() => sharedContents.delete(sharedId), 300000);

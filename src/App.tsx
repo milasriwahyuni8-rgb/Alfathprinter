@@ -165,70 +165,80 @@ export default function App() {
     const sharedId = params.get('sharedId');
     
     if (sharedId && !user && isAuthLoaded) {
-       setError("Gambar diterima! Silakan masuk dengan Google untuk memproses.");
+       setError("Gambar diterima dari Share! Silakan masuk dengan Google untuk memproses struk otomatis.");
     }
 
-    if (!isAuthLoaded || !user) return;
+    if (!isAuthLoaded || !user || !sharedId) return;
     
     // 2. Check for shared image from Web Share Target
-    if (sharedId) {
-      const fetchShared = async () => {
-        try {
-          setIsLoading(true);
-          const res = await fetch(`/api/shared/${sharedId}`);
-          if (!res.ok) throw new Error("Gagal mengambil data share");
-          const sharedData = await res.json();
-          // Remove param from URL
-          window.history.replaceState({}, document.title, "/");
-          
-          // Use latest settings from localStorage directly to be safe
-          const currentSettings = JSON.parse(localStorage.getItem('alfathprint_settings') || '{}');
-          const apiKey = currentSettings.customApiKey || '';
-          const engine = currentSettings.scanEngine || 'ai';
-
-          setIsLoading(true);
-          let parsedData;
-          if (engine === 'local') {
-            parsedData = await scanReceiptLocally(sharedData.base64Data);
-          } else {
-            parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, apiKey);
-          }
-
-          setData(prev => ({
-            ...prev,
-            ...parsedData,
-            kodeReferensi: parsedData.kodeReferensi || '-',
-            nominal: cleanNominal(parsedData.nominal),
-            admin: 0, 
-          }));
-          setView('preview');
-        } catch (err: any) {
-          console.error("Shared content error:", err);
-          const isQuota = err.message?.toLowerCase().includes('quota') || err.message?.includes('429');
-          const isInvalidKey = err.message?.includes('API Key');
-          
-          if (isQuota || isInvalidKey) {
-            setData(prev => ({
-              ...prev,
-              tanggal: new Date().toISOString().split('T')[0],
-              waktu: new Date().toTimeString().split(' ')[0],
-              kodeReferensi: 'ID-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-              bankTujuan: 'INPUT MANUAL',
-              noRekening: '-',
-              namaPenerima: 'EDIT NAMA DISINI',
-              nominal: 0,
-              admin: 0,
-            }));
-            setView('preview');
-            setError(err.message || "Batas AI habis, silakan isi data secara manual.");
-          } else {
-            setError(err.message || "Gagal memproses data share");
-          }
-        } finally {
-          setIsLoading(false);
+    const fetchShared = async () => {
+      if (!sharedId || isLoading) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
+        console.log("Mencoba mengambil data share ID:", sharedId);
+        
+        const res = await fetch(`/api/shared/${sharedId}`);
+        if (!res.ok) {
+          throw new Error("Data share tidak ditemukan atau sudah kadaluarsa.");
         }
-      };
-      fetchShared();
+        
+        const sharedData = await res.json();
+        
+        // Remove param from URL first to prevent retry on refresh
+        window.history.replaceState({}, document.title, "/");
+        
+        // Use current settings
+        const apiKey = localStorage.getItem('alfathprint_settings') 
+          ? JSON.parse(localStorage.getItem('alfathprint_settings')!).customApiKey 
+          : '';
+        const engine = localStorage.getItem('alfathprint_settings')
+          ? JSON.parse(localStorage.getItem('alfathprint_settings')!).scanEngine
+          : 'ai';
+
+        let parsedData;
+        if (engine === 'local') {
+          parsedData = await scanReceiptLocally(sharedData.base64Data);
+        } else {
+          parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, apiKey);
+        }
+
+        setData(prev => ({
+          ...prev,
+          ...parsedData,
+          kodeReferensi: parsedData.kodeReferensi || '-',
+          nominal: cleanNominal(parsedData.nominal),
+          admin: 0, 
+        }));
+        
+        setView('preview');
+      } catch (err: any) {
+        console.error("Shared content error:", err);
+        // Clear param anyway on error so user isn't stuck
+        window.history.replaceState({}, document.title, "/");
+        
+        const isQuota = err.message?.toLowerCase().includes('quota') || err.message?.includes('429');
+        if (isQuota) {
+           setData(prev => ({
+             ...prev,
+             tanggal: new Date().toISOString().split('T')[0],
+             waktu: new Date().toTimeString().split(' ')[0],
+             nominal: 0,
+             admin: 0,
+           }));
+           setView('preview');
+           setError("Kuota AI Habis. Silakan isi data secara manual.");
+        } else {
+           setError(err.message || "Gagal memproses share gambar.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (sharedId && isAuthLoaded && user) {
+       fetchShared();
     }
   }, [isAuthLoaded, user]);
 
@@ -455,8 +465,10 @@ export default function App() {
     }
 
     const exportData = history.map((entry, index) => {
-      const adminFee = entry.data.showAdminFee !== false ? (entry.data.admin || 0) : 0;
-      return {
+      const showAdmin = entry.data.showAdminFee !== false;
+      const adminFee = showAdmin ? (entry.data.admin || 0) : 0;
+      
+      const row: any = {
         'No.': index + 1,
         'Tanggal': entry.data.tanggal,
         'Waktu': entry.data.waktu,
@@ -464,11 +476,17 @@ export default function App() {
         'Bank Tujuan': entry.data.bankTujuan,
         'No. Rekening': entry.data.noRekening,
         'Nominal': entry.data.nominal,
-        'Admin': adminFee,
-        'Total': entry.data.nominal + adminFee,
-        'Ref': entry.data.kodeReferensi,
-        'Cashier': entry.data.cabang || '-'
       };
+
+      if (showAdmin) {
+        row['Admin'] = adminFee;
+      }
+      
+      row['Total'] = entry.data.nominal + adminFee;
+      row['Ref'] = entry.data.kodeReferensi;
+      row['Cashier'] = entry.data.cabang || '-';
+      
+      return row;
     });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -488,22 +506,34 @@ export default function App() {
     doc.setFontSize(10);
     doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
 
+    const showAdminRow = data.showAdminFee;
+    const headers = ['No', 'Tanggal', 'Penerima', 'Bank', 'Nominal'];
+    if (showAdminRow) headers.push('Admin');
+    headers.push('Total');
+
     const tableData = history.map((entry, index) => {
-      const adminFee = entry.data.showAdminFee !== false ? (entry.data.admin || 0) : 0;
-      return [
+      const showAdmin = entry.data.showAdminFee !== false;
+      const adminFee = showAdmin ? (entry.data.admin || 0) : 0;
+      
+      const row = [
         index + 1,
         entry.data.tanggal,
         entry.data.namaPenerima,
         entry.data.bankTujuan,
         `Rp ${entry.data.nominal.toLocaleString('id-ID')}`,
-        `Rp ${adminFee.toLocaleString('id-ID')}`,
-        `Rp ${(entry.data.nominal + adminFee).toLocaleString('id-ID')}`
       ];
+
+      if (showAdmin) {
+        row.push(`Rp ${adminFee.toLocaleString('id-ID')}`);
+      }
+
+      row.push(`Rp ${(entry.data.nominal + adminFee).toLocaleString('id-ID')}`);
+      return row;
     });
 
     autoTable(doc, {
       startY: 30,
-      head: [['No', 'Tanggal', 'Penerima', 'Bank', 'Nominal', 'Admin', 'Total']],
+      head: [headers],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [99, 102, 241] },
