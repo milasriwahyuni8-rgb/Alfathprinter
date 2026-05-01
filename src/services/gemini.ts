@@ -41,21 +41,25 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
     try {
       const ai = getAI(currentKey);
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [
           {
             parts: [
-              { text: `Ekstrak data transaksi dari gambar bukti transfer bank ini secara akurat.
-                Output harus berupa JSON murni dengan key: 
-                - tanggal (format: YYYY-MM-DD)
-                - waktu (format: HH:mm)
-                - kodeReferensi (cari juga "No. Referensi", "ID Transaksi", dsb)
-                - bankTujuan (nama bank tujuan transfer)
-                - noRekening (nomor rekening penerima)
-                - namaPenerima (nama lengkap penerima)
-                - nominal (angka murni, ambil dari "Jumlah", "Total", "Nominal Transfer", "Jumlah Bayar", "Total Bayar", atau "Total Transfer")
+              { text: `Ekstrak data transaksi dari gambar bukti transfer bank (Indonesian Bank Receipt) secara akurat dan sangat cepat.
+                Pahami istilah perbankan Indonesia seperti "Jumlah", "Nominal", "Transfer Keluar", "Ke Rekening", "Penerima", "Ref", dsb.
 
-                Pastikan nominal adalah angka bulat tanpa simbol mata uang. Abaikan biaya admin jika tertulis terpisah.` },
+                Output WAJIB berupa JSON murni dengan schema: 
+                - "tanggal": string (format: YYYY-MM-DD)
+                - "waktu": string (format: HH:mm atau HH:mm:ss)
+                - "kodeReferensi": string (cari "No. Referensi", "ID Transaksi", "RRN", atau "No. Transaksi")
+                - "bankTujuan": string (nama bank, misal "BCA", "BRI", "MANDIRI", "BNI", "BSI", "DANAMON", "SEABANK", dsb)
+                - "noRekening": string (angka saja)
+                - "namaPenerima": string (nama lengkap penerima, HURUF KAPITAL)
+                - "nominal": number (JUMLAH TRANSFER ASLI, abaikan biaya admin jika dipisah. Jika hanya ada TOTAL, kurangi biaya admin jika diketahui)
+                - "admin": number (Biaya admin jika tertera jelas, misal 2500 atau 6500. Jika tidak ada, isi 0)
+
+                PENTING: Bedakan antara "Jumlah Transfer" (Nominal) dan "Total Bayar" (Nominal + Admin).
+                Hanya angka bulat. Gunakan kecepatan maksimal.` },
               {
                 inlineData: {
                   data: base64Data.split(",")[1],
@@ -140,7 +144,7 @@ export async function testGeminiKey(customKeys: string) {
     try {
       const ai = getAI(keyList[i]);
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: "Say 'ok'"
       });
       return !!response.text;

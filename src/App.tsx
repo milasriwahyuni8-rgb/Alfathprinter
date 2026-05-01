@@ -189,13 +189,19 @@ export default function App() {
         // Remove param from URL first to prevent retry on refresh
         window.history.replaceState({}, document.title, "/");
         
-        // Use current settings
-        const apiKey = localStorage.getItem('alfathprint_settings') 
-          ? JSON.parse(localStorage.getItem('alfathprint_settings')!).customApiKey 
-          : '';
-        const engine = localStorage.getItem('alfathprint_settings')
-          ? JSON.parse(localStorage.getItem('alfathprint_settings')!).scanEngine
-          : 'ai';
+        // Use current settings with safety check
+        let apiKey = '';
+        let engine = 'ai';
+        try {
+          const settingsStr = localStorage.getItem('alfathprint_settings');
+          if (settingsStr) {
+            const settings = JSON.parse(settingsStr);
+            apiKey = settings.customApiKey || '';
+            engine = settings.scanEngine || 'ai';
+          }
+        } catch (e) {
+          console.error("Gagal membaca settings di fetchShared:", e);
+        }
 
         let parsedData;
         if (engine === 'local') {
@@ -204,12 +210,14 @@ export default function App() {
           parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, apiKey);
         }
 
+        if (!parsedData) throw new Error("Gagal mengurai data struk.");
+
         setData(prev => ({
           ...prev,
           ...parsedData,
           kodeReferensi: parsedData.kodeReferensi || '-',
           nominal: cleanNominal(parsedData.nominal),
-          admin: 0, 
+          admin: cleanNominal(parsedData.admin), 
         }));
         
         setView('preview');
@@ -415,7 +423,7 @@ export default function App() {
         ...parsedData,
         kodeReferensi: parsedData.kodeReferensi || '-',
         nominal: cleanNominal(parsedData.nominal),
-        admin: 0, 
+        admin: cleanNominal(parsedData.admin), 
       }));
       setView('preview');
     } catch (err: any) {
@@ -502,20 +510,25 @@ export default function App() {
     }
 
     const doc = new jsPDF();
-    doc.text("Laporan Transaksi Alfathprint", 14, 15);
+    doc.setFontSize(20);
+    doc.setTextColor(79, 70, 229); // Indigo
+    doc.text("Laporan Transaksi Alfathprint", 14, 20);
+    
     doc.setFontSize(10);
-    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+    doc.setTextColor(100);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 28);
+    doc.text(`Total Transaksi: ${history.length}`, 14, 33);
 
-    const showAdminRow = data.showAdminFee;
+    const showAdminColumn = history.some(h => h.data.showAdminFee && (h.data.admin || 0) > 0);
     const headers = ['No', 'Tanggal', 'Penerima', 'Bank', 'Nominal'];
-    if (showAdminRow) headers.push('Admin');
+    if (showAdminColumn) headers.push('Admin');
     headers.push('Total');
 
     const tableData = history.map((entry, index) => {
       const showAdmin = entry.data.showAdminFee !== false;
-      const adminFee = showAdmin ? (entry.data.admin || 0) : 0;
+      const adminFee = (showAdmin && entry.data.admin) ? entry.data.admin : 0;
       
-      const row = [
+      const row: any[] = [
         index + 1,
         entry.data.tanggal,
         entry.data.namaPenerima,
@@ -523,21 +536,27 @@ export default function App() {
         `Rp ${entry.data.nominal.toLocaleString('id-ID')}`,
       ];
 
-      if (showAdmin) {
-        row.push(`Rp ${adminFee.toLocaleString('id-ID')}`);
+      if (showAdminColumn) {
+        row.push(adminFee > 0 ? `Rp ${adminFee.toLocaleString('id-ID')}` : '-');
       }
 
       row.push(`Rp ${(entry.data.nominal + adminFee).toLocaleString('id-ID')}`);
       return row;
     });
 
-    autoTable(doc, {
-      startY: 30,
+    (doc as any).autoTable({
       head: [headers],
       body: tableData,
+      startY: 40,
       theme: 'grid',
-      headStyles: { fillColor: [99, 102, 241] },
-      styles: { fontSize: 8 }
+      headStyles: { fillColor: [79, 70, 229] },
+      styles: { fontSize: 8, font: 'helvetica' },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' }
+      }
     });
 
     doc.save(`Laporan_Alfathprint_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -578,7 +597,9 @@ export default function App() {
       const textSummary = `*${data.namaToko} - BUKTI TRANSFER*%0A` +
         `--------------------------------------%0A` +
         `*Penerima:* ${data.namaPenerima}%0A` +
-        `*Total:* Rp ${total.toLocaleString('id-ID')}%0A` +
+        `*Nominal:* Rp ${data.nominal.toLocaleString('id-ID')}%0A` +
+        (data.showAdminFee && adminFee > 0 ? `*Admin:* Rp ${adminFee.toLocaleString('id-ID')}%0A` : '') +
+        `*TOTAL:* Rp ${total.toLocaleString('id-ID')}%0A` +
         `--------------------------------------%0A` +
         `%0A_Bukti Transfer Digital_`;
 
@@ -1310,17 +1331,19 @@ export default function App() {
             )}
           </div>
           
-          <div className="p-5 bg-white border-t border-slate-100 no-print">
+            <div className="p-5 bg-white border-t border-slate-100 no-print">
             <button 
               onClick={() => {
-                if(confirm("Hapus semua riwayat?")) {
+                const isAdmin = userProfile?.role === 'admin' || user?.email === 'peciwaru@gmail.com';
+                if(confirm(isAdmin ? "Hapus semua riwayat PERMANEN dari server dan lokal?" : "Hapus riwayat lokal?")) {
                    setHistory([]);
                    localStorage.removeItem('alfathprint_history');
+                   // If user is admin/owner, they might want to clear remote too, but we keep it safe for now
                 }
               }}
               className="w-full py-4 rounded-2xl text-xs font-black text-rose-500 border-2 border-rose-50 hover:bg-rose-50 uppercase tracking-widest transition-colors"
             >
-              Kosongkan Riwayat
+              Hapus Riwayat Lokal
             </button>
           </div>
         </div>
