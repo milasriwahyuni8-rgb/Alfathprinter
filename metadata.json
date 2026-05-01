@@ -2,7 +2,8 @@
   "name": "Alfathprint",
   "description": "Ekstrak data dari screenshot transaksi dan cetak struk thermal otomatis.",
   "requestFramePermissions": [
-    "bluetooth"
+    "bluetooth",
+    "web-share"
   ],
   "majorCapabilities": []
 }

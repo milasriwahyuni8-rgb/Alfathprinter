@@ -136,6 +136,31 @@ export default function App() {
 
   // Sync settings when auth is loaded
   useEffect(() => {
+    // 1. Load settings first
+    try {
+      const savedSettings = localStorage.getItem('alfathprint_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setData(prev => ({
+          ...prev,
+          namaToko: settings.namaToko || prev.namaToko,
+          cabang: settings.cabang || prev.cabang,
+          footerLine1: settings.footerLine1 || prev.footerLine1,
+          footerLine2: settings.footerLine2 || prev.footerLine2,
+          logoUrl: settings.logoUrl || prev.logoUrl,
+          namaPengirim: settings.namaPengirim || prev.namaPengirim,
+          showPengirim: settings.showPengirim !== undefined ? settings.showPengirim : prev.showPengirim,
+          useFallbackAI: settings.useFallbackAI !== undefined ? settings.useFallbackAI : prev.useFallbackAI,
+          aiEnabled: settings.aiEnabled !== undefined ? settings.aiEnabled : prev.aiEnabled,
+          customApiKey: settings.customApiKey || prev.customApiKey,
+          showAdminFee: settings.showAdminFee !== undefined ? settings.showAdminFee : prev.showAdminFee,
+          tid: settings.tid || prev.tid,
+        }));
+      }
+    } catch (e) {
+      console.error("Gagal memuat pengaturan lokal:", e);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const sharedId = params.get('sharedId');
     
@@ -145,7 +170,7 @@ export default function App() {
 
     if (!isAuthLoaded || !user) return;
     
-    // Check for shared image from Web Share Target
+    // 2. Check for shared image from Web Share Target
     if (sharedId) {
       const fetchShared = async () => {
         try {
@@ -156,24 +181,17 @@ export default function App() {
           // Remove param from URL
           window.history.replaceState({}, document.title, "/");
           
-          if (data.aiEnabled === false) {
-             setData(prev => ({
-               ...prev,
-               tanggal: new Date().toISOString().split('T')[0],
-               waktu: new Date().toTimeString().split(' ')[0],
-               kodeReferensi: '-',
-               tid: 'NK-' + Math.random().toString(36).substr(2, 4).toUpperCase(),
-             }));
-             setView('preview');
-             return;
-          }
+          // Use latest settings from localStorage directly to be safe
+          const currentSettings = JSON.parse(localStorage.getItem('alfathprint_settings') || '{}');
+          const apiKey = currentSettings.customApiKey || '';
+          const engine = currentSettings.scanEngine || 'ai';
 
           setIsLoading(true);
           let parsedData;
-          if (data.scanEngine === 'local') {
+          if (engine === 'local') {
             parsedData = await scanReceiptLocally(sharedData.base64Data);
           } else {
-            parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, data.customApiKey);
+            parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, apiKey);
           }
 
           setData(prev => ({
@@ -189,8 +207,7 @@ export default function App() {
           const isQuota = err.message?.toLowerCase().includes('quota') || err.message?.includes('429');
           const isInvalidKey = err.message?.includes('API Key');
           
-          if ((isQuota || isInvalidKey) && data.useFallbackAI) {
-            // Fallback to manual entry if AI fails
+          if (isQuota || isInvalidKey) {
             setData(prev => ({
               ...prev,
               tanggal: new Date().toISOString().split('T')[0],
@@ -212,29 +229,6 @@ export default function App() {
         }
       };
       fetchShared();
-    }
-
-    try {
-      const savedSettings = localStorage.getItem('alfathprint_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setData(prev => ({
-          ...prev,
-          namaToko: settings.namaToko || prev.namaToko,
-          cabang: settings.cabang || prev.cabang,
-          footerLine1: settings.footerLine1 || prev.footerLine1,
-          footerLine2: settings.footerLine2 || prev.footerLine2,
-          logoUrl: settings.logoUrl || prev.logoUrl,
-          namaPengirim: settings.namaPengirim || prev.namaPengirim,
-          showPengirim: settings.showPengirim !== undefined ? settings.showPengirim : prev.showPengirim,
-          useFallbackAI: settings.useFallbackAI !== undefined ? settings.useFallbackAI : prev.useFallbackAI,
-          aiEnabled: settings.aiEnabled !== undefined ? settings.aiEnabled : prev.aiEnabled,
-          customApiKey: settings.customApiKey || prev.customApiKey,
-          showAdminFee: settings.showAdminFee !== undefined ? settings.showAdminFee : prev.showAdminFee,
-        }));
-      }
-    } catch (e) {
-      console.error("Gagal memuat pengaturan lokal:", e);
     }
   }, [isAuthLoaded, user]);
 
@@ -828,11 +822,25 @@ export default function App() {
                       <FileText className="w-5 h-5 text-slate-400" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold text-slate-800 mb-0.5 uppercase">{entry.data.namaPenerima}</h4>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(entry.timestamp).toLocaleString('id-ID')}</p>
+                      <h4 className="font-bold text-slate-800 mb-0.5 uppercase truncate w-32">{entry.data.namaPenerima}</h4>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(entry.timestamp).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})} • {new Date(entry.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</p>
                     </div>
-                    <div className="text-right">
-                       <p className="text-sm font-black text-indigo-600">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
+                    <div className="flex items-center gap-2">
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setData(entry.data);
+                           // Small delay to let state update
+                           setTimeout(shareDigitalReceipt, 100);
+                         }}
+                         className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
+                         title="Share"
+                       >
+                         <Share2 className="w-4 h-4" />
+                       </button>
+                       <div className="text-right ml-1">
+                          <p className="text-xs font-black text-indigo-600">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
+                       </div>
                     </div>
                   </div>
                 ))
@@ -844,6 +852,34 @@ export default function App() {
               )}
             </div>
 
+            <div className="mt-8 pt-8 border-t border-slate-100">
+              <div className="bg-indigo-50/50 rounded-2xl p-6 border border-indigo-100/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-indigo-900">Cara Pakai Fitur Share</h3>
+                </div>
+                <ul className="space-y-3 text-sm text-indigo-800/80">
+                  <li className="flex gap-2">
+                    <span className="font-bold text-indigo-600">1.</span>
+                    <span>Klik ikon **"Install"** di pojok kanan atas layar ini atau gunakan menu browser **"Tambahkan ke Layar Utama"**.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-indigo-600">2.</span>
+                    <span>Buka galeri/aplikasi bank Anda dan pilih screenshot bukti transfer.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold text-indigo-600">3.</span>
+                    <span>Klik **Share/Bagikan** dan pilih ikon **Alfathprint**. Data akan otomatis terproses!</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center text-slate-300 text-[10px] font-bold uppercase tracking-widest pb-10">
+              © 2026 Alfathprint • Versi 2.0.1
+            </div>
           </div>
 
           {/* Bottom Navigation */}
