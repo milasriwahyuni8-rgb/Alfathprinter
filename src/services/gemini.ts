@@ -43,7 +43,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
     try {
       const client = getAI(currentKey);
       const response = await client.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3-flash-preview",
         contents: [
           {
             parts: [
@@ -143,7 +143,7 @@ export async function testGeminiKey(customKeys: string) {
     try {
       const client = getAI(keyList[i]);
       const response = await client.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3-flash-preview",
         contents: "Say 'ok'"
       });
       return !!response.candidates?.[0]?.content?.parts?.[0]?.text;

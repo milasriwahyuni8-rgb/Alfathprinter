@@ -57,10 +57,18 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
         const newValue = inputRef.current.value;
         let newPos = 0;
         let digitsFound = 0;
+
+        if (digitsBeforeCursor === 0) {
+          inputRef.current.setSelectionRange(0, 0);
+          return;
+        }
+
         for (let i = 0; i < newValue.length; i++) {
           if (/\d/.test(newValue[i])) digitsFound++;
-          newPos = i + 1;
-          if (digitsFound === digitsBeforeCursor) break;
+          if (digitsFound === digitsBeforeCursor) {
+            newPos = i + 1;
+            break;
+          }
         }
         inputRef.current.setSelectionRange(newPos, newPos);
       }, 0);
