@@ -4,6 +4,7 @@ import { scanReceiptLocally } from './services/localOcr';
 import { printViaBluetooth } from './services/bluetooth';
 import { ReceiptData, HistoryEntry } from './types';
 import { ReceiptPreview } from './components/ReceiptPreview';
+import { ReceiptEditForm } from './components/ReceiptEditForm';
 import { AdminPanel } from './components/AdminPanel';
 import { auth, db, loginWithGoogle, logout } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -62,6 +63,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('pro');
+  const [activeTab, setActiveTab] = useState<'preview' | 'edit'>('preview');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isTestingKey, setIsTestingKey] = useState(false);
@@ -1379,34 +1381,70 @@ export default function App() {
           <div className="flex-1 overflow-y-auto no-print flex flex-col items-center bg-[#f2f4f7] overscroll-contain touch-pan-y">
             <div className="w-full max-w-md mx-auto p-4 flex flex-col gap-6 pb-32">
               
-              {/* Style Selector */}
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
-                {LAYOUTS.map(l => (
-                  <button
-                    key={l.id}
-                    onClick={() => setActiveLayout(l.id)}
-                    className={`shrink-0 px-4 py-2.5 rounded-full text-xs font-bold transition-all snap-center whitespace-nowrap
-                      ${activeLayout === l.id 
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
-                  >
-                    {l.name}
-                  </button>
-                ))}
+              {/* Tab Selector */}
+              <div className="bg-slate-200/50 p-1 rounded-xl flex gap-1">
+                <button 
+                  onClick={() => setActiveTab('preview')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'preview' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                >
+                  <FileText size={14} />
+                  LIHAT STRUK
+                </button>
+                <button 
+                  onClick={() => setActiveTab('edit')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'edit' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                >
+                  <Edit3 size={14} />
+                  EDIT DATA
+                </button>
               </div>
 
-              {/* Receipt Canvas */}
-              <div className="flex justify-center items-center py-4 relative">
-                {/* Dotted bg behind receipt */}
-                <div className="absolute inset-x-[-20px] inset-y-[-20px] opacity-20 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
-                
-                <ReceiptPreview 
-                  ref={receiptRef}
-                  data={data} 
-                  onChange={setData} 
-                  layout={activeLayout}
-                />
-              </div>
+              {activeTab === 'preview' ? (
+                <>
+                  {/* Style Selector */}
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                    {LAYOUTS.map(l => (
+                      <button
+                        key={l.id}
+                        onClick={() => setActiveLayout(l.id)}
+                        className={`shrink-0 px-4 py-2.5 rounded-full text-xs font-bold transition-all snap-center whitespace-nowrap
+                          ${activeLayout === l.id 
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+                      >
+                        {l.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Receipt Canvas */}
+                  <div className="flex justify-center items-center py-4 relative">
+                    {/* Dotted bg behind receipt */}
+                    <div className="absolute inset-x-[-20px] inset-y-[-20px] opacity-20 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
+                    
+                    <ReceiptPreview 
+                      ref={receiptRef}
+                      data={data} 
+                      onChange={setData} 
+                      layout={activeLayout}
+                    />
+                  </div>
+                  
+                  <div className="bg-white p-5 rounded-3xl border border-indigo-50 shadow-sm text-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 leading-relaxed">
+                      💡 Klik pada teks di dalam struk untuk edit cepat <br/> atau gunakan tab <span className="text-indigo-600">"Edit Data"</span> untuk pengisian detail.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100"
+                >
+                  <ReceiptEditForm data={data} onChange={setData} />
+                </motion.div>
+              )}
             </div>
           </div>
 
