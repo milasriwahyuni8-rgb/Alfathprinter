@@ -22,9 +22,10 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
     </div>
   );
 
-  const TextInput = ({ field, placeholder, uppercase = false }: { field: keyof ReceiptData, placeholder: string, uppercase?: boolean }) => (
+  const TextInput = ({ field, placeholder, uppercase = false, inputMode }: { field: keyof ReceiptData, placeholder: string, uppercase?: boolean, inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'] }) => (
     <input
       type="text"
+      inputMode={inputMode}
       value={(data[field] as string) || ''}
       onChange={(e) => handleChange(field, uppercase ? e.target.value.toUpperCase() : e.target.value)}
       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -34,23 +35,48 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
   );
 
   const NumberInput = ({ field, placeholder }: { field: keyof ReceiptData, placeholder: string }) => {
+    const inputRef = React.useRef<HTMLInputElement>(null);
     const value = data[field] as number;
-    const formatValue = (val: number) => {
-      if (!val && val !== 0) return '';
-      return new Intl.NumberFormat('id-ID').format(val);
+    
+    const handleRawChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const el = e.target;
+      const selectionStart = el.selectionStart || 0;
+      const oldValue = el.value;
+
+      // Count digits before cursor
+      const digitsBeforeCursor = oldValue.slice(0, selectionStart).replace(/\D/g, '').length;
+
+      // Get digits only
+      const rawValue = oldValue.replace(/\D/g, '');
+      const numericValue = parseInt(rawValue, 10);
+      handleChange(field, isNaN(numericValue) ? 0 : numericValue);
+
+      // Restore cursor position
+      setTimeout(() => {
+        if (!inputRef.current) return;
+        const newValue = inputRef.current.value;
+        let newPos = 0;
+        let digitsFound = 0;
+        for (let i = 0; i < newValue.length; i++) {
+          if (/\d/.test(newValue[i])) digitsFound++;
+          newPos = i + 1;
+          if (digitsFound === digitsBeforeCursor) break;
+        }
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }, 0);
     };
+
+    const displayValue = value === 0 ? '' : new Intl.NumberFormat('id-ID').format(value);
 
     return (
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">Rp</span>
         <input
+          ref={inputRef}
           type="text"
-          value={formatValue(value)}
-          onChange={(e) => {
-            const rawValue = e.target.value.replace(/\./g, '');
-            const numericValue = parseInt(rawValue, 10);
-            handleChange(field, isNaN(numericValue) ? 0 : numericValue);
-          }}
+          inputMode="decimal"
+          value={displayValue}
+          onChange={handleRawChange}
           className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono"
           placeholder={placeholder}
         />
@@ -96,7 +122,7 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
           </InputGroup>
 
           <InputGroup label="Nomor Rekening" icon={CreditCard}>
-            <TextInput field="noRekening" placeholder="Nomor Rekening" />
+            <TextInput field="noRekening" placeholder="Nomor Rekening" inputMode="numeric" />
           </InputGroup>
         </div>
 

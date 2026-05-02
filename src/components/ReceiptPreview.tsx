@@ -675,6 +675,134 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
     </div>
   );
 
+  const PopupEditor = ({ field, onSave, onCancel }: { field: EditingField, onSave: (val: any) => void, onCancel: () => void }) => {
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const [inputValue, setInputValue] = useState(
+      field.type === 'number' 
+        ? (field.value === 0 ? '' : field.value.toString())
+        : (field.value || '')
+    );
+
+    const handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const el = e.target;
+      const selectionStart = el.selectionStart || 0;
+      const oldValue = el.value;
+      
+      // Count digits before cursor in the current value (which might have formatting)
+      const digitsBeforeCursor = oldValue.slice(0, selectionStart).replace(/\D/g, '').length;
+      
+      // Get digits only for storage
+      const cleanVal = oldValue.replace(/[^0-9]/g, '');
+      setInputValue(cleanVal);
+
+      // Restore cursor position after formatting
+      setTimeout(() => {
+        if (!inputRef.current) return;
+        
+        const newValue = inputRef.current.value;
+        let newPos = 0;
+        let digitsFound = 0;
+        
+        for (let i = 0; i < newValue.length; i++) {
+          if (/\d/.test(newValue[i])) {
+            digitsFound++;
+          }
+          newPos = i + 1;
+          if (digitsFound === digitsBeforeCursor) break;
+        }
+        
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }, 0);
+    };
+
+    const formattedDisplay = () => {
+      if (field.type !== 'number') return inputValue;
+      if (!inputValue) return '';
+      return new Intl.NumberFormat('id-ID').format(parseInt(inputValue, 10));
+    };
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print">
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
+        >
+          <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                {field.type === 'number' ? <DollarSign size={18} /> : <Hash size={18} />}
+              </div>
+              <div>
+                <p className="text-[10px] font-bold opacity-70 uppercase leading-none">EDIT DATA</p>
+                <h3 className="text-sm font-bold uppercase tracking-wider">{field.label}</h3>
+              </div>
+            </div>
+            <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <div className="relative group">
+              {field.type === 'number' && (
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+              )}
+              <input
+                ref={inputRef}
+                autoFocus
+                inputMode={field.type === 'number' ? 'decimal' : 'text'}
+                type="text"
+                value={field.type === 'number' ? formattedDisplay() : inputValue}
+                onChange={(e) => {
+                  if (field.type === 'number') {
+                    handleNumericChange(e);
+                  } else {
+                    setInputValue(e.target.value);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const finalVal = field.type === 'number' ? parseInt(inputValue || '0', 10) : inputValue;
+                    onSave(finalVal);
+                  }
+                  if (e.key === 'Escape') onCancel();
+                }}
+                className={`w-full ${field.type === 'number' ? 'pl-11' : 'px-4'} py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all`}
+                placeholder={`Masukkan ${field.label}...`}
+              />
+              {field.type === 'number' && inputValue && (
+                <div className="mt-2 text-right text-[10px] text-slate-400 font-mono">
+                  Tanpa titik/Rp saat mengetik
+                </div>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <button 
+                onClick={onCancel}
+                className="py-3.5 rounded-2xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => {
+                  const finalVal = field.type === 'number' ? parseInt(inputValue || '0', 10) : inputValue;
+                  onSave(finalVal);
+                }}
+                className="py-3.5 rounded-2xl bg-indigo-600 text-white text-xs font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+              >
+                <Check size={16} />
+                Simpan
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div 
@@ -705,76 +833,11 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       {/* Popup Editor Modal */}
       <AnimatePresence>
         {editingField && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
-            >
-              <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                    {editingField.type === 'number' ? <DollarSign size={18} /> : <Hash size={18} />}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold opacity-70 uppercase leading-none">EDIT DATA</p>
-                    <h3 className="text-sm font-bold uppercase tracking-wider">{editingField.label}</h3>
-                  </div>
-                </div>
-                <button onClick={() => setEditingField(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="p-6">
-                <div className="relative group">
-                  {editingField.type === 'number' && (
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                  )}
-                  <input
-                    autoFocus
-                    type={editingField.type === 'number' ? 'text' : 'text'}
-                    value={editingField.type === 'number' 
-                      ? new Intl.NumberFormat('id-ID').format(editingField.value)
-                      : editingField.value || ''}
-                    onChange={(e) => {
-                      let val = e.target.value;
-                      if (editingField.type === 'number') {
-                        const rawValue = val.replace(/\./g, '');
-                        const numericValue = parseInt(rawValue, 10);
-                        setEditingField({ ...editingField, value: isNaN(numericValue) ? 0 : numericValue });
-                      } else {
-                        setEditingField({ ...editingField, value: val });
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveEdit(editingField.value);
-                        if (e.key === 'Escape') setEditingField(null);
-                    }}
-                    className={`w-full ${editingField.type === 'number' ? 'pl-11' : 'px-4'} py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all`}
-                    placeholder={`Masukkan ${editingField.label}...`}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 mt-6">
-                  <button 
-                    onClick={() => setEditingField(null)}
-                    className="py-3.5 rounded-2xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={() => saveEdit(editingField.value)}
-                    className="py-3.5 rounded-2xl bg-indigo-600 text-white text-xs font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
-                  >
-                    <Check size={16} />
-                    Simpan
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <PopupEditor 
+            field={editingField} 
+            onSave={saveEdit} 
+            onCancel={() => setEditingField(null)} 
+          />
         )}
       </AnimatePresence>
     </>
