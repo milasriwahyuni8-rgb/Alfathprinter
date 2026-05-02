@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ReceiptData } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
+import { X, Check, Landmark, User, CreditCard, Hash, Calendar, Clock, DollarSign, ShieldCheck } from 'lucide-react';
 
 interface ReceiptPreviewProps {
   data: ReceiptData;
@@ -9,70 +11,82 @@ interface ReceiptPreviewProps {
   layout?: 'standard' | 'modern' | 'bank' | 'elegant' | 'pro' | 'digital';
 }
 
-const InlineInput = ({ value, onChange, align = 'left', isBold = false, uppercase = false }: { value: string, onChange: (v: string) => void, align?: string, isBold?: boolean, uppercase?: boolean }) => (
-  <input
-    value={value || ''}
-    onChange={(e) => onChange(uppercase ? e.target.value.toUpperCase() : e.target.value)}
-    className={`bg-transparent outline-none border border-transparent hover:border-indigo-600/30 focus:border-indigo-600 focus:bg-indigo-50/50 hover:bg-slate-50/50 rounded-sm transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
-    style={{ textAlign: align as any, padding: '2px 4px', margin: '-2px -4px', width: 'calc(100% + 8px)' }}
-    spellCheck={false}
-  />
-);
-
-const InlineCurrencyInput = ({ value, onChange, align = 'right', isBold = false }: { value: number, onChange: (v: number) => void, align?: string, isBold?: boolean }) => {
-  const formatValue = (val: number | string) => {
-    if (!val && val !== 0) return '';
-    return new Intl.NumberFormat('id-ID').format(Number(val));
-  };
-
-  return (
-    <div className="relative w-full flex items-center group">
-      <span className="shrink-0 select-none mr-1 opacity-40 group-focus-within:opacity-100 group-focus-within:text-indigo-600 transition-opacity">Rp</span>
-      <input
-        type="text"
-        value={formatValue(value)}
-        onChange={(e) => {
-           const rawValue = e.target.value.replace(/\./g, '');
-           const numericValue = parseInt(rawValue, 10);
-           onChange(isNaN(numericValue) ? 0 : numericValue);
-        }}
-        className={`bg-transparent outline-none border border-transparent hover:border-indigo-600/30 focus:border-indigo-600 focus:bg-indigo-50/50 hover:bg-slate-50/50 rounded-sm transition-all w-full ${isBold ? 'font-bold' : ''} print:border-none print:bg-transparent print:p-0 my-0`}
-        style={{ textAlign: align as any, padding: '2px 4px', width: '100%' }}
-        spellCheck={false}
-      />
-    </div>
-  );
-};
+interface EditingField {
+  key: keyof ReceiptData;
+  label: string;
+  value: any;
+  type: 'text' | 'number' | 'date' | 'time';
+}
 
 export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewProps>(({ data, onChange, fontFamily = 'monospace', className = '', layout = 'standard' }, ref) => {
+  const [editingField, setEditingField] = useState<EditingField | null>(null);
   const total = data.nominal + (data.showAdminFee ? (data.admin || 0) : 0);
+
+  const openEditor = (key: keyof ReceiptData, label: string, type: 'text' | 'number' | 'date' | 'time' = 'text') => {
+    setEditingField({
+      key,
+      label,
+      value: data[key],
+      type
+    });
+  };
+
+  const saveEdit = (val: any) => {
+    if (editingField) {
+      onChange({ ...data, [editingField.key]: val });
+      setEditingField(null);
+    }
+  };
+
+  const InlineInput = ({ value, label, keyName, align = 'left', isBold = false, uppercase = false }: { value: string, label: string, keyName: keyof ReceiptData, align?: string, isBold?: boolean, uppercase?: boolean }) => (
+    <div 
+      onClick={() => openEditor(keyName, label)}
+      className={`cursor-pointer hover:bg-indigo-50/50 rounded-sm transition-all px-1 -mx-1 border border-transparent hover:border-indigo-200 group relative ${isBold ? 'font-bold' : ''}`}
+      style={{ textAlign: align as any }}
+    >
+      <div className="absolute -top-4 left-0 text-[8px] bg-indigo-600 text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">Edit {label}</div>
+      {value || '-'}
+    </div>
+  );
+
+  const InlineCurrencyInput = ({ value, label, keyName, align = 'right', isBold = false }: { value: number, label: string, keyName: keyof ReceiptData, align?: string, isBold?: boolean }) => (
+    <div 
+      onClick={() => openEditor(keyName, label, 'number')}
+      className={`cursor-pointer hover:bg-indigo-50/50 rounded-sm transition-all px-1 -mx-1 border border-transparent hover:border-indigo-200 group relative flex items-center gap-1 ${isBold ? 'font-bold' : ''}`}
+      style={{ justifyContent: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start' }}
+    >
+      <div className="absolute -top-4 left-0 text-[8px] bg-indigo-600 text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">Edit {label}</div>
+      <span className="opacity-40">Rp</span>
+      <span>{new Intl.NumberFormat('id-ID').format(value)}</span>
+    </div>
+  );
 
   const renderStandard = () => (
     <>
       <div className="text-center font-bold text-sm mb-0.5 uppercase">
-        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+        <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       
       <div className="text-center mb-0.5 select-none font-bold text-xs opacity-40">
-        {'='.repeat(32)}
+        {'=' .repeat(32)}
       </div>
 
       <div className="flex justify-between items-center gap-1 leading-none py-0.25">
         <span className="shrink-0 select-none text-[9px] opacity-60">TANGGAL</span>
         <div className="flex-1">
-           <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="right" />
+           <InlineInput value={data.tanggal || ''} label="Tanggal" keyName="tanggal" align="right" />
         </div>
       </div>
       <div className="flex justify-between items-center gap-1 leading-none py-0.25">
         <span className="shrink-0 select-none text-[9px] opacity-60">WAKTU</span>
         <div className="flex-1">
-          <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
+          <InlineInput value={data.waktu || ''} label="Waktu" keyName="waktu" align="right" />
         </div>
       </div>
       <div className="flex justify-between items-center gap-1 leading-none py-0.25">
         <span className="shrink-0 select-none text-[9px] opacity-60 uppercase tracking-tighter">REFF</span>
         <div className="flex-1">
-          <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="right" isBold />
+          <InlineInput value={data.kodeReferensi || ''} label="Ref No" keyName="kodeReferensi" align="right" isBold />
         </div>
       </div>
       
@@ -84,7 +98,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         <div className="w-full flex justify-between items-center gap-1 py-0.25">
           <span className="shrink-0 whitespace-nowrap select-none text-[10px] opacity-70 uppercase">DR</span>
           <div className="flex-1 w-full overflow-hidden">
-            <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="right" />
+            <InlineInput value={data.namaPengirim || ''} label="Pengirim" keyName="namaPengirim" align="right" />
           </div>
         </div>
       )}
@@ -92,19 +106,19 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       <div className="w-full flex justify-between items-center gap-1 py-0.25 mt-0.5">
          <span className="shrink-0 whitespace-nowrap select-none text-[10px] font-black opacity-40 uppercase tracking-widest">NAMA</span>
          <div className="flex-1 w-full overflow-hidden">
-            <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" isBold />
+            <InlineInput value={data.namaPenerima} label="Penerima" keyName="namaPenerima" align="right" isBold />
          </div>
       </div>
       <div className="w-full flex justify-between items-center gap-1 py-0.25">
          <span className="shrink-0 whitespace-nowrap select-none text-[10px] opacity-70">BANK</span>
          <div className="flex-1 w-full overflow-hidden">
-           <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="right" />
+           <InlineInput value={data.bankTujuan} label="Bank" keyName="bankTujuan" align="right" />
          </div>
       </div>
       <div className="w-full flex justify-between items-center gap-1 py-0.25">
          <span className="shrink-0 whitespace-nowrap select-none text-[10px] opacity-70">REK</span>
          <div className="flex-1 w-full text-right font-mono text-[11px]">
-           <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="right" />
+           <InlineInput value={data.noRekening} label="No Rekening" keyName="noRekening" align="right" />
          </div>
       </div>
 
@@ -115,43 +129,43 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       <div className="flex justify-between items-center gap-1 py-0.25">
         <span className="shrink-0 select-none text-[10px] opacity-70">NOMINAL</span>
         <div className="flex-1 font-mono text-xs">
-          <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
+          <InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="right" />
         </div>
       </div>
       {data.showAdminFee && (
         <div className="flex justify-between items-center gap-1 py-0.25">
           <span className="shrink-0 select-none text-[10px] opacity-70">ADMIN</span>
           <div className="flex-1 font-mono text-xs">
-            <InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="right" />
+            <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" />
           </div>
         </div>
       )}
 
       <div className="text-center my-0.25 select-none font-bold text-xs opacity-40">
-        {'='.repeat(32)}
+        {'=' .repeat(32)}
       </div>
 
       <div className="flex justify-between items-center gap-1 leading-none py-0.5">
         <span className="shrink-0 select-none font-bold text-[11px]">TOTAL</span>
         <div className="flex-1">
-          <InlineCurrencyInput value={total} onChange={() => {}} align="right" isBold />
+          <InlineCurrencyInput value={total} label="Total" keyName="nominal" align="right" isBold />
         </div>
       </div>
 
       <div className="text-center mb-1 select-none font-bold text-xs opacity-40">
-        {'='.repeat(32)}
+        {'=' .repeat(32)}
       </div>
       
       <div className="text-center mt-1 mb-0.5">
         <div className="flex items-center justify-center gap-1 uppercase tracking-tighter text-[11px]">
-           <InlineInput value={data.status || ''} onChange={v => onChange({...data, status: v})} align="center" isBold uppercase />
+           <InlineInput value={data.status || ''} label="Status" keyName="status" align="center" isBold uppercase />
         </div>
       </div>
       <div className="text-center text-[9px] leading-tight opacity-70">
-         <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+         <InlineInput value={data.footerLine1 || ''} label="Footer 1" keyName="footerLine1" align="center" uppercase />
       </div>
       <div className="text-center font-bold text-[10px] leading-tight mt-0.5">
-         <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
+         <InlineInput value={data.footerLine2 || ''} label="Footer 2" keyName="footerLine2" align="center" isBold uppercase />
       </div>
     </>
   );
@@ -159,7 +173,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   const renderModern = () => (
     <>
       <div className="text-center font-bold text-base mb-1 uppercase">
-        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+        <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       
       <div className="text-center my-1 select-none font-bold text-xs tracking-[-1px]">
@@ -173,14 +187,14 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       </div>
 
       <div className="flex justify-between items-center gap-2 text-[10px] mb-2 opacity-60">
-        <div><InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="left" /></div>
-        <div><InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" /></div>
+        <div><InlineInput value={data.tanggal || ''} label="Tanggal" keyName="tanggal" align="left" /></div>
+        <div><InlineInput value={data.waktu || ''} label="Waktu" keyName="waktu" align="right" /></div>
       </div>
 
       <div className="flex items-center gap-2 font-bold mb-4 mt-2">
         <span className="shrink-0 select-none">NO REF:</span>
         <div className="flex-1">
-           <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="left" isBold uppercase />
+           <InlineInput value={data.kodeReferensi || ''} label="Ref No" keyName="kodeReferensi" align="left" isBold uppercase />
         </div>
       </div>
 
@@ -188,7 +202,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         <div className="flex items-center gap-2 font-bold mb-2">
           <span className="shrink-0 w-20 select-none">PENGIRIM</span>
           <div className="flex-1">
-             <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="right" isBold uppercase />
+             <InlineInput value={data.namaPengirim || ''} label="Pengirim" keyName="namaPengirim" align="right" isBold uppercase />
           </div>
         </div>
       )}
@@ -197,52 +211,52 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       <div className="flex items-center gap-2 font-bold">
          <span className="shrink-0 w-20 select-none">PENERIMA</span>
          <div className="flex-1">
-            <InlineInput value={data.namaPenerima || ''} onChange={v => onChange({...data, namaPenerima: v})} align="right" isBold uppercase />
+            <InlineInput value={data.namaPenerima || ''} label="Penerima" keyName="namaPenerima" align="right" isBold uppercase />
          </div>
       </div>
       <div className="flex items-center gap-2 font-bold">
          <span className="shrink-0 w-20 select-none">BANK</span>
          <div className="flex-1">
-           <InlineInput value={data.bankTujuan || ''} onChange={v => onChange({...data, bankTujuan: v})} align="right" isBold uppercase />
+           <InlineInput value={data.bankTujuan || ''} label="Bank" keyName="bankTujuan" align="right" isBold uppercase />
          </div>
       </div>
       <div className="flex items-center gap-2 font-bold mb-4">
          <span className="shrink-0 w-20 select-none">REK</span>
          <div className="flex-1">
-           <InlineInput value={data.noRekening || ''} onChange={v => onChange({...data, noRekening: v})} align="right" isBold uppercase />
+           <InlineInput value={data.noRekening || ''} label="No Rekening" keyName="noRekening" align="right" isBold uppercase />
          </div>
       </div>
 
       <div className="bg-gray-200 print:bg-gray-200/50 print:border-y print:border-black print:border-dashed py-2 px-3 flex flex-col items-center justify-center font-bold my-2 rounded-sm">
          <div className="w-full flex justify-between text-[10px] items-center mb-1">
            <span className="opacity-60 uppercase">NOMINAL</span>
-           <div className="w-24"><InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" /></div>
+           <div className="w-24"><InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="right" /></div>
          </div>
          {data.showAdminFee && (
            <div className="w-full flex justify-between text-[10px] items-center mb-1">
              <span className="opacity-60 uppercase">ADMIN</span>
-             <div className="w-24"><InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="right" /></div>
+             <div className="w-24"><InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" /></div>
            </div>
          )}
          <div className="w-full h-[1px] bg-black/10 my-1"></div>
          <span className="uppercase tracking-widest text-[12px]">TOTAL BAYAR</span>
          <div className="w-full mt-1 text-base">
-           <InlineCurrencyInput value={total} onChange={() => {}} align="center" isBold />
+           <InlineCurrencyInput value={total} label="Total" keyName="nominal" align="center" isBold />
          </div>
       </div>
 
       <div className="text-center mt-6 mb-1 font-bold">
         <div className="flex items-center justify-center gap-1">
            <span className="select-none">**</span>
-           <InlineInput value={data.status || ''} onChange={v => onChange({...data, status: v})} align="center" isBold uppercase />
+           <InlineInput value={data.status || ''} label="Status" keyName="status" align="center" isBold uppercase />
            <span className="select-none">**</span>
         </div>
       </div>
       <div className="text-center mb-1">
-         <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+         <InlineInput value={data.footerLine1 || ''} label="Footer 1" keyName="footerLine1" align="center" uppercase />
       </div>
       <div className="text-center font-bold mt-2">
-         <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
+         <InlineInput value={data.footerLine2 || ''} label="Footer 2" keyName="footerLine2" align="center" isBold uppercase />
       </div>
     </>
   );
@@ -250,7 +264,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   const renderBank = () => (
     <>
       <div className="text-center font-bold text-base mb-1 uppercase">
-        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+        <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       <div className="text-center font-bold mb-4 uppercase">
         BUKTI TRANSAKSI
@@ -258,10 +272,10 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
       <div className="flex items-center font-bold">
          <div className="flex-1">
-           <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="left" isBold uppercase />
+           <InlineInput value={data.tanggal || ''} label="Tanggal" keyName="tanggal" align="left" isBold uppercase />
          </div>
          <div className="flex-1">
-           <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" isBold uppercase />
+           <InlineInput value={data.waktu || ''} label="Waktu" keyName="waktu" align="right" isBold uppercase />
          </div>
       </div>
       
@@ -269,7 +283,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
          <span className="shrink-0 w-[120px] select-none">ID REF</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="left" isBold uppercase />
+           <InlineInput value={data.kodeReferensi || ''} label="Ref No" keyName="kodeReferensi" align="left" isBold uppercase />
          </div>
       </div>
 
@@ -277,7 +291,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
          <span className="shrink-0 w-[120px] select-none">NO REF</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="left" isBold uppercase />
+           <InlineInput value={data.kodeReferensi || ''} label="Ref No" keyName="kodeReferensi" align="left" isBold uppercase />
          </div>
       </div>
 
@@ -286,7 +300,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
            <span className="shrink-0 w-[120px] select-none">PENGIRIM</span>
            <span className="select-none mr-2">:</span>
            <div className="flex-1">
-             <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="left" isBold uppercase />
+             <InlineInput value={data.namaPengirim || ''} label="Pengirim" keyName="namaPengirim" align="left" isBold uppercase />
            </div>
         </div>
       )}
@@ -295,35 +309,35 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
          <span className="shrink-0 w-[120px] select-none">TRANSAKSI</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={'TRANSFER BANK'} onChange={() => {}} align="left" isBold uppercase />
+           <InlineInput value={'TRANSFER BANK'} label="Jenis Transaksi" keyName="status" align="left" isBold uppercase />
          </div>
       </div>
       <div className="flex items-center font-bold">
          <span className="shrink-0 w-[120px] select-none">BANK TUJUAN</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={data.bankTujuan || ''} onChange={v => onChange({...data, bankTujuan: v})} align="left" isBold uppercase />
+           <InlineInput value={data.bankTujuan || ''} label="Bank" keyName="bankTujuan" align="left" isBold uppercase />
          </div>
       </div>
       <div className="flex items-center font-bold">
          <span className="shrink-0 w-[120px] select-none">NO REKENING</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={data.noRekening || ''} onChange={v => onChange({...data, noRekening: v})} align="left" isBold uppercase />
+           <InlineInput value={data.noRekening || ''} label="No Rekening" keyName="noRekening" align="left" isBold uppercase />
          </div>
       </div>
       <div className="flex items-center font-bold">
          <span className="shrink-0 w-[120px] select-none">PENERIMA</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={data.namaPenerima || ''} onChange={v => onChange({...data, namaPenerima: v})} align="left" isBold uppercase />
+           <InlineInput value={data.namaPenerima || ''} label="Penerima" keyName="namaPenerima" align="left" isBold uppercase />
          </div>
       </div>
       <div className="flex items-center font-bold">
          <span className="shrink-0 w-[120px] select-none">JUMLAH</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="left" isBold />
+           <InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="left" isBold />
          </div>
       </div>
       {data.showAdminFee && (
@@ -331,7 +345,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
            <span className="shrink-0 w-[120px] select-none uppercase">ADMIN FEE</span>
            <span className="select-none mr-2">:</span>
            <div className="flex-1">
-             <InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="left" isBold />
+             <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="left" isBold />
            </div>
         </div>
       )}
@@ -339,22 +353,22 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
          <span className="shrink-0 w-[120px] select-none">TOTAL</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineCurrencyInput value={total} onChange={() => {}} align="left" isBold />
+           <InlineCurrencyInput value={total} label="Total" keyName="nominal" align="left" isBold />
          </div>
       </div>
       <div className="flex items-center font-bold">
          <span className="shrink-0 w-[120px] select-none">STATUS</span>
          <span className="select-none mr-2">:</span>
          <div className="flex-1">
-           <InlineInput value={data.status === 'TRANSAKSI BERHASIL' ? 'SUKSES' : 'PENDING'} onChange={() => {}} align="left" isBold uppercase />
+           <InlineInput value={data.status === 'TRANSAKSI BERHASIL' ? 'SUKSES' : 'PENDING'} label="Status" keyName="status" align="left" isBold uppercase />
          </div>
       </div>
 
       <div className="text-center font-bold mt-8 mb-1">
-         <InlineInput value={data.footerLine2} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold />
+         <InlineInput value={data.footerLine2} label="Footer 2" keyName="footerLine2" align="center" isBold />
       </div>
       <div className="text-center mb-1">
-         <InlineInput value={data.footerLine1} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+         <InlineInput value={data.footerLine1} label="Footer 1" keyName="footerLine1" align="center" uppercase />
       </div>
     </>
   );
@@ -362,7 +376,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   const renderElegant = () => (
     <div className="flex flex-col w-full">
       <div className="text-center font-bold text-lg mb-1 tracking-widest uppercase">
-        <InlineInput value={data.namaToko || ''} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+        <InlineInput value={data.namaToko || ''} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       <div className="text-center text-[10px] mb-4 opacity-50 italic">
         --- OFFICIAL RECEIPT ---
@@ -371,11 +385,11 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       <div className="flex justify-between border-y border-black/10 py-2 mb-4">
         <div className="flex flex-col">
           <span className="text-[9px] opacity-40 font-bold uppercase">Transaction Date</span>
-          <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="left" />
+          <InlineInput value={data.tanggal || ''} label="Tanggal" keyName="tanggal" align="left" />
         </div>
         <div className="flex flex-col text-right">
           <span className="text-[9px] opacity-40 font-bold uppercase">Time</span>
-          <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
+          <InlineInput value={data.waktu || ''} label="Waktu" keyName="waktu" align="right" />
         </div>
       </div>
 
@@ -384,25 +398,25 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
           <div className="flex flex-col">
             <span className="text-[9px] opacity-40 font-bold uppercase underline decoration-indigo-200">Sender</span>
             <div className="font-bold text-[13px]">
-              <InlineInput value={data.namaPengirim || ''} onChange={v => onChange({...data, namaPengirim: v})} align="left" isBold uppercase />
+              <InlineInput value={data.namaPengirim || ''} label="Pengirim" keyName="namaPengirim" align="left" isBold uppercase />
             </div>
           </div>
         )}
         <div className="flex flex-col">
           <span className="text-[9px] opacity-40 font-bold uppercase underline decoration-indigo-200">Recipient</span>
           <div className="font-bold text-[13px]">
-            <InlineInput value={data.namaPenerima || ''} onChange={v => onChange({...data, namaPenerima: v})} align="left" isBold uppercase />
+            <InlineInput value={data.namaPenerima || ''} label="Penerima" keyName="namaPenerima" align="left" isBold uppercase />
           </div>
         </div>
         <div className="flex flex-col">
           <span className="text-[9px] opacity-40 font-bold uppercase underline decoration-indigo-200">Destination</span>
           <div className="flex items-center gap-2">
              <div className="w-1/3">
-              <InlineInput value={data.bankTujuan || ''} onChange={v => onChange({...data, bankTujuan: v})} align="left" isBold uppercase />
+              <InlineInput value={data.bankTujuan || ''} label="Bank" keyName="bankTujuan" align="left" isBold uppercase />
              </div>
              <span className="opacity-20">|</span>
              <div className="flex-1">
-              <InlineInput value={data.noRekening || ''} onChange={v => onChange({...data, noRekening: v})} align="left" isBold />
+              <InlineInput value={data.noRekening || ''} label="No Rekening" keyName="noRekening" align="left" isBold />
              </div>
           </div>
         </div>
@@ -412,14 +426,14 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         <div className="flex justify-between items-center text-[11px]">
           <span className="opacity-60">Amount</span>
           <div className="w-24">
-            <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
+            <InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="right" />
           </div>
         </div>
         {data.showAdminFee && (
           <div className="flex justify-between items-center text-[11px]">
             <span className="opacity-60">Service Fee</span>
             <div className="w-24">
-              <InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="right" />
+              <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" />
             </div>
           </div>
         )}
@@ -437,10 +451,10 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
       <div className="text-center space-y-1">
         <div className="text-[10px] font-bold uppercase">
-          <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+          <InlineInput value={data.footerLine1 || ''} label="Footer 1" keyName="footerLine1" align="center" uppercase />
         </div>
         <div className="text-[10px] uppercase opacity-60">
-          <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" />
+          <InlineInput value={data.footerLine2 || ''} label="Footer 2" keyName="footerLine2" align="center" />
         </div>
       </div>
       <div className="mt-4 text-center opacity-30 text-[8px] font-mono">
@@ -452,19 +466,19 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   const renderPro = () => (
     <>
       <div className="text-center font-bold text-base mb-1 uppercase">
-        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+        <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       
       <div className="flex justify-between items-center gap-2">
         <span className="shrink-0 font-bold">TANGGAL</span>
         <div className="flex-1">
-           <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="right" />
+           <InlineInput value={data.tanggal || ''} label="Tanggal" keyName="tanggal" align="right" />
         </div>
       </div>
       <div className="flex justify-between items-center gap-2">
         <span className="shrink-0 font-bold">WAKTU</span>
         <div className="flex-1">
-          <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
+          <InlineInput value={data.waktu || ''} label="Waktu" keyName="waktu" align="right" />
         </div>
       </div>
       <div className="text-center my-1 select-none font-bold">
@@ -473,7 +487,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
       <div className="text-center mb-1">
         <div className="font-bold uppercase tracking-wider">KODE REFERENSI</div>
-        <InlineInput value={data.kodeReferensi || '-'} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold />
+        <InlineInput value={data.kodeReferensi || '-'} label="Ref No" keyName="kodeReferensi" align="center" isBold />
       </div>
       <div className="text-center my-1 select-none font-bold">
         {'-'.repeat(32)}
@@ -486,19 +500,19 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       <div className="w-full flex justify-between items-center gap-1 mb-1">
          <span className="shrink-0 font-bold">BANK TUJUAN</span>
          <div className="flex-1 w-full overflow-hidden">
-           <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="right" uppercase />
+           <InlineInput value={data.bankTujuan} label="Bank" keyName="bankTujuan" align="right" uppercase />
          </div>
       </div>
       <div className="w-full flex justify-between items-center gap-1 mb-1">
          <span className="shrink-0 font-bold">NO REKENING</span>
          <div className="flex-1 w-full">
-           <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="right" />
+           <InlineInput value={data.noRekening} label="No Rekening" keyName="noRekening" align="right" />
          </div>
       </div>
       <div className="w-full flex justify-between items-center gap-1 mb-4">
          <span className="shrink-0 font-bold">PENERIMA</span>
          <div className="flex-1 w-full overflow-hidden">
-            <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" uppercase />
+            <InlineInput value={data.namaPenerima} label="Penerima" keyName="namaPenerima" align="right" uppercase />
          </div>
       </div>
 
@@ -509,14 +523,14 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       <div className="flex justify-between items-center gap-2 mb-1">
         <span className="shrink-0 font-bold">NOMINAL</span>
         <div className="flex-1">
-          <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" />
+          <InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="right" />
         </div>
       </div>
       {data.showAdminFee && (
         <div className="flex justify-between items-center gap-2 mb-1">
           <span className="shrink-0 font-bold">ADMIN</span>
           <div className="flex-1">
-            <InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="right" />
+            <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" />
           </div>
         </div>
       )}
@@ -547,10 +561,10 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         </div>
       </div>
       <div className="text-center mb-1 text-[10px] opacity-60 font-medium">
-         <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+         <InlineInput value={data.footerLine1 || ''} label="Footer 1" keyName="footerLine1" align="center" uppercase />
       </div>
       <div className="text-center font-bold text-slate-800">
-         <InlineInput value={data.footerLine2 || ''} onChange={v => onChange({...data, footerLine2: v})} align="center" isBold uppercase />
+         <InlineInput value={data.footerLine2 || ''} label="Footer 2" keyName="footerLine2" align="center" isBold uppercase />
       </div>
     </>
   );
@@ -558,7 +572,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   const renderDigital = () => (
     <div className="flex flex-col gap-0 text-[11px] leading-tight font-mono">
       <div className="text-center font-bold text-base mb-1 uppercase tracking-wider">
-        <InlineInput value={data.namaToko} onChange={v => onChange({...data, namaToko: v})} align="center" isBold uppercase />
+        <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       <div className="text-center select-none opacity-40 -mt-1">{'='.repeat(32)}</div>
       
@@ -566,13 +580,13 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         <div className="flex justify-between uppercase">
           <span className="shrink-0 select-none opacity-80 font-bold">TANGGAL</span>
           <div className="flex-1 w-full truncate text-right">
-             <InlineInput value={data.tanggal || ''} onChange={v => onChange({...data, tanggal: v})} align="right" />
+             <InlineInput value={data.tanggal || ''} label="Tanggal" keyName="tanggal" align="right" />
           </div>
         </div>
         <div className="flex justify-between uppercase">
           <span className="shrink-0 select-none opacity-80 font-bold">WAKTU</span>
           <div className="flex-1 w-full truncate text-right">
-             <InlineInput value={data.waktu || ''} onChange={v => onChange({...data, waktu: v})} align="right" />
+             <InlineInput value={data.waktu || ''} label="Waktu" keyName="waktu" align="right" />
           </div>
         </div>
       </div>
@@ -581,7 +595,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       
       <div className="text-center font-bold uppercase mb-0.5 select-none opacity-70 text-[10px]">KODE REFERENSI</div>
       <div className="text-center break-all font-bold text-xs px-1">
-        <InlineInput value={data.kodeReferensi || ''} onChange={v => onChange({...data, kodeReferensi: v})} align="center" isBold uppercase />
+        <InlineInput value={data.kodeReferensi || ''} label="Ref No" keyName="kodeReferensi" align="center" isBold uppercase />
       </div>
       
       <div className="text-center select-none opacity-30 my-0.5">{'-'.repeat(32)}</div>
@@ -591,19 +605,19 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         <div className="flex justify-between gap-2 uppercase">
           <span className="shrink-0 select-none opacity-80 font-bold">BANK TUJUAN</span>
           <div className="flex-1 w-full truncate text-right font-bold">
-             <InlineInput value={data.bankTujuan} onChange={v => onChange({...data, bankTujuan: v})} align="right" uppercase />
+             <InlineInput value={data.bankTujuan} label="Bank" keyName="bankTujuan" align="right" uppercase />
           </div>
         </div>
         <div className="flex justify-between gap-2 uppercase">
           <span className="shrink-0 select-none opacity-80 font-bold tracking-tighter">NO REKENING</span>
           <div className="flex-1 w-full truncate text-right">
-             <InlineInput value={data.noRekening} onChange={v => onChange({...data, noRekening: v})} align="right" />
+             <InlineInput value={data.noRekening} label="No Rekening" keyName="noRekening" align="right" />
           </div>
         </div>
         <div className="flex justify-between gap-2 uppercase">
           <span className="shrink-0 select-none opacity-80 font-bold">PENERIMA</span>
           <div className="flex-1 w-full truncate text-right">
-             <InlineInput value={data.namaPenerima} onChange={v => onChange({...data, namaPenerima: v})} align="right" isBold uppercase />
+             <InlineInput value={data.namaPenerima} label="Penerima" keyName="namaPenerima" align="right" isBold uppercase />
           </div>
         </div>
       </div>
@@ -614,14 +628,14 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         <div className="flex justify-between font-bold uppercase text-[12px]">
           <span className="select-none opacity-90">NOMINAL</span>
           <div className="w-28 text-right">
-             <InlineCurrencyInput value={data.nominal} onChange={v => onChange({...data, nominal: v})} align="right" isBold />
+             <InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="right" isBold />
           </div>
         </div>
         {data.showAdminFee && (
           <div className="flex justify-between font-bold uppercase text-[12px]">
             <span className="select-none opacity-90">ADMIN</span>
             <div className="w-28 text-right">
-               <InlineCurrencyInput value={data.admin || 0} onChange={v => onChange({...data, admin: v})} align="right" isBold />
+               <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" isBold />
             </div>
           </div>
         )}
@@ -640,20 +654,20 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       <div className="text-center space-y-0.5 px-1 py-2">
         <div className="font-bold uppercase tracking-wider text-[13px]">
            <div className="flex items-center justify-center gap-1">
-              <InlineInput value={data.status || 'TRANSAKSI BERHASIL'} onChange={v => onChange({...data, status: v})} align="center" isBold uppercase />
+              <InlineInput value={data.status || 'TRANSAKSI BERHASIL'} label="Status" keyName="status" align="center" isBold uppercase />
            </div>
         </div>
         <div className="text-[10px] uppercase opacity-60">
-           <InlineInput value={data.footerLine1 || ''} onChange={v => onChange({...data, footerLine1: v})} align="center" uppercase />
+           <InlineInput value={data.footerLine1 || ''} label="Footer 1" keyName="footerLine1" align="center" uppercase />
         </div>
         <div className="font-bold text-lg mt-1 uppercase tracking-widest leading-none">
-           <InlineInput value="TERIMA KASIH" onChange={() => {}} align="center" isBold />
+           <InlineInput value="TERIMA KASIH" label="Footer" keyName="status" align="center" isBold />
         </div>
         <div className="text-[10px] opacity-40 uppercase mt-0.5">
            <div className="flex items-center justify-center gap-1">
              <span className="select-none">TID:</span>
              <div className="w-20">
-               <InlineInput value={data.tid || 'NK-000'} onChange={v => onChange({...data, tid: v})} align="left" uppercase />
+               <InlineInput value={data.tid || 'NK-000'} label="TID" keyName="tid" align="left" uppercase />
              </div>
            </div>
         </div>
@@ -662,30 +676,108 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   );
 
   return (
-    <div 
-      ref={ref}
-      className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-2 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
-      style={{ fontFamily }}
-    >
-      <div className="p-4 md:p-5 pb-6">
-        <div className="receipt-content flex flex-col gap-0.5 relative z-10 bg-white">
-        {data.logoUrl && (
-          <div className="flex justify-center mb-4 no-print-logo">
-            <img src={data.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+    <>
+      <div 
+        ref={ref}
+        className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-2 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
+        style={{ fontFamily }}
+      >
+        <div className="p-4 md:p-5 pb-6">
+          <div className="receipt-content flex flex-col gap-0.5 relative z-10 bg-white">
+          {data.logoUrl && (
+            <div className="flex justify-center mb-4 no-print-logo">
+              <img src={data.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+            </div>
+          )}
+          {layout === 'standard' && renderStandard()}
+          {layout === 'modern' && renderModern()}
+          {layout === 'bank' && renderBank()}
+          {layout === 'elegant' && renderElegant()}
+          {layout === 'pro' && renderPro()}
+          {layout === 'digital' && renderDigital()}
+          </div>
+        </div>
+        
+        {/* Paper Jagged Edge Representation */}
+        <div className="absolute -bottom-[14px] left-0 right-0 h-[14px] bg-white print:hidden pointer-events-none z-0" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }}></div>
+      </div>
+
+      {/* Popup Editor Modal */}
+      <AnimatePresence>
+        {editingField && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
+            >
+              <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                    {editingField.type === 'number' ? <DollarSign size={18} /> : <Hash size={18} />}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold opacity-70 uppercase leading-none">EDIT DATA</p>
+                    <h3 className="text-sm font-bold uppercase tracking-wider">{editingField.label}</h3>
+                  </div>
+                </div>
+                <button onClick={() => setEditingField(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="relative group">
+                  {editingField.type === 'number' && (
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                  )}
+                  <input
+                    autoFocus
+                    type={editingField.type === 'number' ? 'text' : 'text'}
+                    value={editingField.type === 'number' 
+                      ? new Intl.NumberFormat('id-ID').format(editingField.value)
+                      : editingField.value || ''}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (editingField.type === 'number') {
+                        const rawValue = val.replace(/\./g, '');
+                        const numericValue = parseInt(rawValue, 10);
+                        setEditingField({ ...editingField, value: isNaN(numericValue) ? 0 : numericValue });
+                      } else {
+                        setEditingField({ ...editingField, value: val });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit(editingField.value);
+                        if (e.key === 'Escape') setEditingField(null);
+                    }}
+                    className={`w-full ${editingField.type === 'number' ? 'pl-11' : 'px-4'} py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all`}
+                    placeholder={`Masukkan ${editingField.label}...`}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <button 
+                    onClick={() => setEditingField(null)}
+                    className="py-3.5 rounded-2xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={() => saveEdit(editingField.value)}
+                    className="py-3.5 rounded-2xl bg-indigo-600 text-white text-xs font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+                  >
+                    <Check size={16} />
+                    Simpan
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
-        {layout === 'standard' && renderStandard()}
-        {layout === 'modern' && renderModern()}
-        {layout === 'bank' && renderBank()}
-        {layout === 'elegant' && renderElegant()}
-        {layout === 'pro' && renderPro()}
-        {layout === 'digital' && renderDigital()}
-        </div>
-      </div>
-      
-      {/* Paper Jagged Edge Representation */}
-      <div className="absolute -bottom-[14px] left-0 right-0 h-[14px] bg-white print:hidden pointer-events-none z-0" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }}></div>
-    </div>
+      </AnimatePresence>
+    </>
   );
 });
 
