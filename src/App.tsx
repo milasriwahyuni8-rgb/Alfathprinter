@@ -72,10 +72,11 @@ export default function App() {
   const receiptRef = React.useRef<HTMLDivElement>(null);
 
   const testApiKey = async () => {
-    if (!data.customApiKey) return;
+    const trimmedKey = data.customApiKey.trim();
+    if (!trimmedKey) return;
     setIsTestingKey(true);
     try {
-      await testGeminiKey(data.customApiKey);
+      await testGeminiKey(trimmedKey);
       setKeyStatus('valid');
       alert("✅ API Key Valid! AI sekarang akan menggunakan kuota Anda.");
     } catch (err: any) {
@@ -85,6 +86,13 @@ export default function App() {
       setIsTestingKey(false);
     }
   };
+
+  // Sync keyStatus when data.customApiKey changes
+  useEffect(() => {
+    if (!data.customApiKey) setKeyStatus('none');
+    // We don't automatically set to 'valid' because we haven't tested it in this session yet
+    // But if it was loaded from localStorage, showing 'valid' or 'none' based on existence is okay
+  }, [data.customApiKey]);
 
   const deleteHistory = (id: string) => {
     const newHistory = history.filter(h => h.id !== id);
@@ -305,22 +313,28 @@ export default function App() {
   }, []);
 
   const saveSettings = (updatedData: Partial<ReceiptData>) => {
+    const processedData = { ...updatedData };
+    if (processedData.customApiKey !== undefined) {
+      processedData.customApiKey = processedData.customApiKey.trim();
+    }
+
     const newSettings = {
-      namaToko: updatedData.namaToko || data.namaToko,
-      cabang: updatedData.cabang || data.cabang,
-      footerLine1: updatedData.footerLine1 || data.footerLine1,
-      footerLine2: updatedData.footerLine2 || data.footerLine2,
-      logoUrl: updatedData.logoUrl || data.logoUrl,
-      namaPengirim: updatedData.namaPengirim !== undefined ? updatedData.namaPengirim : data.namaPengirim,
-      showPengirim: updatedData.showPengirim !== undefined ? updatedData.showPengirim : data.showPengirim,
-      useFallbackAI: updatedData.useFallbackAI !== undefined ? updatedData.useFallbackAI : data.useFallbackAI,
-      aiEnabled: updatedData.aiEnabled !== undefined ? updatedData.aiEnabled : data.aiEnabled,
-      scanEngine: updatedData.scanEngine !== undefined ? updatedData.scanEngine : data.scanEngine,
-      customApiKey: updatedData.customApiKey !== undefined ? updatedData.customApiKey : data.customApiKey,
-      showAdminFee: updatedData.showAdminFee !== undefined ? updatedData.showAdminFee : data.showAdminFee,
+      namaToko: processedData.namaToko || data.namaToko,
+      cabang: processedData.cabang || data.cabang,
+      footerLine1: processedData.footerLine1 || data.footerLine1,
+      footerLine2: processedData.footerLine2 || data.footerLine2,
+      logoUrl: processedData.logoUrl || data.logoUrl,
+      namaPengirim: processedData.namaPengirim !== undefined ? processedData.namaPengirim : data.namaPengirim,
+      showPengirim: processedData.showPengirim !== undefined ? processedData.showPengirim : data.showPengirim,
+      useFallbackAI: processedData.useFallbackAI !== undefined ? processedData.useFallbackAI : data.useFallbackAI,
+      aiEnabled: processedData.aiEnabled !== undefined ? processedData.aiEnabled : data.aiEnabled,
+      scanEngine: processedData.scanEngine !== undefined ? processedData.scanEngine : data.scanEngine,
+      customApiKey: processedData.customApiKey !== undefined ? processedData.customApiKey : data.customApiKey,
+      showAdminFee: processedData.showAdminFee !== undefined ? processedData.showAdminFee : data.showAdminFee,
+      tid: processedData.tid || data.tid,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
-    setData(prev => ({ ...prev, ...updatedData }));
+    setData(prev => ({ ...prev, ...processedData }));
   };
 
   const addToHistory = async (receipt: ReceiptData) => {
@@ -1412,46 +1426,48 @@ export default function App() {
       </main>
 
       {/* Mobile Navigation */}
-      <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2rem] flex items-center justify-around h-20 px-4 z-40 shadow-2xl shadow-slate-900/20">
-        <button 
-          onClick={() => setView('home')} 
-          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'home' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
-        >
-          <Home className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase tracking-widest">Home</span>
-        </button>
-        <button 
-          onClick={() => setView('history')} 
-          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'history' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
-        >
-          <History className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase tracking-widest">History</span>
-        </button>
-        <div className="relative -top-8">
-           <button 
-             onClick={() => document.getElementById('fileInput')?.click()}
-             className="w-16 h-16 bg-brand-600 text-white rounded-[2rem] flex items-center justify-center shadow-xl shadow-brand-500/40 border-4 border-[#f2f4f7] active:scale-95 transition-all"
-           >
-             <Zap className="w-7 h-7" />
-           </button>
-        </div>
-        <button 
-          onClick={() => setView('settings')} 
-          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'settings' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
-        >
-          <Settings className="w-5 h-5" />
-          <span className="text-[8px] font-black uppercase tracking-widest">Settings</span>
-        </button>
-        {isAdminUser && (
+      {view !== 'preview' && (
+        <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2rem] flex items-center justify-around h-20 px-4 z-40 shadow-2xl shadow-slate-900/20">
           <button 
-            onClick={() => setView('admin')} 
-            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'admin' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+            onClick={() => setView('home')} 
+            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'home' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
           >
-            <ShieldAlert className="w-5 h-5" />
-            <span className="text-[8px] font-black uppercase tracking-widest">Admin</span>
+            <Home className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Home</span>
           </button>
-        )}
-      </nav>
+          <button 
+            onClick={() => setView('history')} 
+            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'history' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+          >
+            <History className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">History</span>
+          </button>
+          <div className="relative -top-8">
+             <button 
+               onClick={() => document.getElementById('fileInput')?.click()}
+               className="w-16 h-16 bg-brand-600 text-white rounded-[2rem] flex items-center justify-center shadow-xl shadow-brand-500/40 border-4 border-[#f2f4f7] active:scale-95 transition-all"
+             >
+               <Zap className="w-7 h-7" />
+             </button>
+          </div>
+          <button 
+            onClick={() => setView('settings')} 
+            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'settings' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+          >
+            <Settings className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Settings</span>
+          </button>
+          {isAdminUser && (
+            <button 
+              onClick={() => setView('admin')} 
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'admin' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+            >
+              <ShieldAlert className="w-5 h-5" />
+              <span className="text-[8px] font-black uppercase tracking-widest">Admin</span>
+            </button>
+          )}
+        </nav>
+      )}
 
       {/* Print Only Container */}
       <div className="hidden print:flex print:absolute print:inset-0 print:items-start print:justify-start">
