@@ -63,7 +63,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderStandard = () => (
     <>
-      <div className="text-center font-bold text-sm mb-0.5 uppercase">
+      <div className="text-center font-bold text-xs mb-0.5 uppercase">
         <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       
@@ -172,7 +172,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderModern = () => (
     <>
-      <div className="text-center font-bold text-base mb-1 uppercase">
+      <div className="text-center font-bold text-sm mb-1 uppercase">
         <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       
@@ -263,7 +263,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderBank = () => (
     <>
-      <div className="text-center font-bold text-base mb-1 uppercase">
+      <div className="text-center font-bold text-sm mb-1 uppercase">
         <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       <div className="text-center font-bold mb-4 uppercase">
@@ -375,7 +375,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderElegant = () => (
     <div className="flex flex-col w-full">
-      <div className="text-center font-bold text-lg mb-1 tracking-widest uppercase">
+      <div className="text-center font-bold text-base mb-1 tracking-widest uppercase">
         <InlineInput value={data.namaToko || ''} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       <div className="text-center text-[10px] mb-4 opacity-50 italic">
@@ -465,7 +465,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderPro = () => (
     <>
-      <div className="text-center font-bold text-base mb-1 uppercase">
+      <div className="text-center font-bold text-sm mb-1 uppercase">
         <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       
@@ -540,10 +540,10 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       </div>
 
       <div className="flex justify-between items-center gap-2 font-bold mb-1">
-        <span className="shrink-0 font-bold text-lg">TOTAL</span>
+        <span className="shrink-0 font-bold text-base">TOTAL</span>
         <div className="flex-1 text-right">
            <span className="mr-1">Rp</span>
-           <span className="text-lg font-black">{new Intl.NumberFormat('id-ID').format(total)}</span>
+           <span className="text-base font-black">{new Intl.NumberFormat('id-ID').format(total)}</span>
         </div>
       </div>
 
@@ -571,7 +571,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderDigital = () => (
     <div className="flex flex-col gap-0 text-[11px] leading-tight font-mono">
-      <div className="text-center font-bold text-base mb-1 uppercase tracking-wider">
+      <div className="text-center font-bold text-sm mb-1 uppercase tracking-wider">
         <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
       </div>
       <div className="text-center select-none opacity-40 -mt-1">{'='.repeat(32)}</div>
@@ -643,10 +643,10 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       
       <div className="text-center select-none opacity-40 pt-0.5">{'='.repeat(32)}</div>
       <div className="flex justify-between font-bold uppercase px-1 py-1">
-        <span className="select-none text-sm">TOTAL</span>
+        <span className="select-none text-xs">TOTAL</span>
         <div className="w-32 text-right">
-           <span className="mr-1">Rp</span>
-           <span className="text-base">{new Intl.NumberFormat('id-ID').format(total)}</span>
+           <span className="mr-1 text-xs">Rp</span>
+           <span className="text-sm">{new Intl.NumberFormat('id-ID').format(total)}</span>
         </div>
       </div>
       <div className="text-center select-none opacity-40 -mt-1 pb-1">{'='.repeat(32)}</div>
@@ -660,7 +660,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         <div className="text-[10px] uppercase opacity-60">
            <InlineInput value={data.footerLine1 || ''} label="Footer 1" keyName="footerLine1" align="center" uppercase />
         </div>
-        <div className="font-bold text-lg mt-1 uppercase tracking-widest leading-none">
+        <div className="font-bold text-base mt-1 uppercase tracking-widest leading-none">
            <InlineInput value="TERIMA KASIH" label="Footer" keyName="status" align="center" isBold />
         </div>
         <div className="text-[10px] opacity-40 uppercase mt-0.5">
@@ -773,7 +773,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
                   }
                   if (e.key === 'Escape') onCancel();
                 }}
-                className={`w-full ${field.type === 'number' ? 'pl-16' : 'px-6'} py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-2xl font-display font-black text-slate-900 focus:outline-none focus:border-brand-500 focus:bg-white transition-all`}
+                className={`w-full ${field.type === 'number' ? 'pl-16' : 'px-6'} py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xl font-display font-black text-slate-900 focus:outline-none focus:border-brand-500 focus:bg-white transition-all`}
                 placeholder={`Masukkan ${field.label}...`}
               />
             </div>

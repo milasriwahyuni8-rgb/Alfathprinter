@@ -853,48 +853,48 @@ export default function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
                        {/* Main Scan Card */}
                        <div 
-                        className="bg-brand-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-brand-200/50 cursor-pointer active:scale-[0.98] transition-all group overflow-hidden relative"
+                        className="bg-brand-600 rounded-[2.5rem] p-6 text-white shadow-2xl shadow-brand-200/50 cursor-pointer active:scale-[0.98] transition-all group overflow-hidden relative"
                         onClick={() => document.getElementById('fileInput')?.click()}
                       >
                         <div className="relative z-10">
-                          <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            {isLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
+                          <div className="w-14 h-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            {isLoading ? <Loader2 className="w-7 h-7 animate-spin" /> : <ImagePlus className="w-7 h-7" />}
                           </div>
-                          <h2 className="text-3xl font-display font-black mb-2 uppercase leading-tight tracking-tight">Pindai Struk</h2>
-                          <p className="text-brand-100 text-sm font-medium leading-relaxed max-w-[200px]">
+                          <h2 className="text-2xl font-display font-black mb-1 uppercase leading-tight tracking-tight">Pindai Struk</h2>
+                          <p className="text-brand-100 text-[11px] font-medium leading-relaxed max-w-[180px]">
                             Otomatis ekstraksi data struk transfer dengan AI Alfath.
                           </p>
                           <input id="fileInput" type="file" accept="image/*" className="hidden" onChange={handleImageSelected} disabled={isLoading} />
                         </div>
-                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                          <Zap className="w-32 h-32 rotate-12" />
+                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                          <Zap className="w-24 h-24 rotate-12" />
                         </div>
                       </div>
 
                       {/* Token PLN Card (Placeholder) */}
-                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                      <div className="bg-white rounded-[2.5rem] p-6 border border-slate-200 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
                         <div>
-                          <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-6">
-                            <Zap className="w-6 h-6" />
+                          <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-4">
+                            <Zap className="w-5 h-5" />
                           </div>
-                          <h3 className="text-xl font-bold text-slate-800 mb-1">Token Listrik</h3>
-                          <p className="text-xs text-slate-400 font-medium font-mono uppercase tracking-widest">Available Soon</p>
+                          <h3 className="text-lg font-bold text-slate-800 mb-0.5">Token Listrik</h3>
+                          <p className="text-[9px] text-slate-400 font-bold font-mono uppercase tracking-widest">Available Soon</p>
                         </div>
-                        <div className="mt-4 flex items-center gap-2 text-slate-300 text-[10px] font-bold uppercase tracking-widest">
-                          <CheckCircle2 className="w-3 h-3" /> Digital Copy System
+                        <div className="mt-3 flex items-center gap-2 text-slate-300 text-[9px] font-bold uppercase tracking-widest">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Digital Copy System
                         </div>
                       </div>
                     </div>
 
-                    <section className="space-y-4">
+                    <section className="space-y-3">
                       <div className="flex items-center justify-between px-2">
-                        <h3 className="font-display font-black text-xl text-slate-900 uppercase">Riwayat Terbaru</h3>
-                        <button onClick={() => setView('history')} className="text-xs font-black text-brand-600 uppercase tracking-widest hover:underline">
+                        <h3 className="font-display font-black text-lg text-slate-900 uppercase">Riwayat Terbaru</h3>
+                        <button onClick={() => setView('history')} className="text-[10px] font-black text-brand-600 uppercase tracking-widest hover:underline">
                           Lihat Semua
                         </button>
                       </div>
 
-                      <div className="grid gap-4">
+                      <div className="grid gap-3">
                         {history.length > 0 ? (
                           history.slice(0, 5).map((entry) => (
                             <motion.div 
@@ -902,29 +902,29 @@ export default function App() {
                               animate={{ opacity: 1, y: 0 }}
                               key={entry.id} 
                               onClick={() => { setData(entry.data); setView('preview'); }}
-                              className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4 hover:border-brand-200 transition-all cursor-pointer group"
+                              className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-3 hover:border-brand-200 transition-all cursor-pointer group"
                             >
-                              <div className="bg-slate-50 w-14 h-14 rounded-2xl flex items-center justify-center border border-slate-50 group-hover:bg-brand-50 transition-colors">
-                                <FileText className="w-6 h-6 text-slate-400 group-hover:text-brand-500" />
+                              <div className="bg-slate-50 w-12 h-12 rounded-2xl flex items-center justify-center border border-slate-50 group-hover:bg-brand-50 transition-colors">
+                                <FileText className="w-5 h-5 text-slate-400 group-hover:text-brand-500" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-slate-800 text-sm mb-0.5 uppercase truncate">{entry.data.namaPenerima}</h4>
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <h4 className="font-bold text-slate-800 text-xs mb-0.5 uppercase truncate">{entry.data.namaPenerima}</h4>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                   <span>{entry.data.bankTujuan}</span>
                                   <span className="w-1 h-1 bg-slate-300 rounded-full" />
                                   <span>{new Date(entry.timestamp).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})}</span>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
                                  <div className="text-right">
-                                    <p className="text-sm font-black text-slate-900">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
-                                    <p className="text-[10px] text-brand-600 font-bold uppercase">Berhasil</p>
+                                    <p className="text-xs font-black text-slate-900">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
+                                    <p className="text-[9px] text-brand-600 font-bold uppercase">Berhasil</p>
                                  </div>
                                  <button 
                                    onClick={(e) => { e.stopPropagation(); setData(entry.data); setTimeout(shareDigitalReceipt, 100); }}
-                                   className="p-3 bg-brand-50 text-brand-600 rounded-2xl hover:bg-brand-100 transition-colors"
+                                   className="p-2.5 bg-brand-50 text-brand-600 rounded-xl hover:bg-brand-100 transition-colors"
                                  >
-                                   <Share2 className="w-4 h-4" />
+                                   <Share2 className="w-3.5 h-3.5" />
                                  </button>
                               </div>
                             </motion.div>
@@ -1310,19 +1310,19 @@ export default function App() {
           </header>
 
           <div className="flex-1 overflow-y-auto no-print flex flex-col items-center bg-[#f2f4f7] overscroll-contain touch-pan-y">
-            <div className="w-full max-w-2xl mx-auto p-6 flex flex-col gap-8 pb-40">
+            <div className="w-full max-w-xl mx-auto p-4 flex flex-col gap-4 pb-40">
               
               {/* Tab Selector */}
-              <div className="bg-white p-2 rounded-[2rem] shadow-sm flex items-center gap-2 border border-slate-200">
+              <div className="bg-white p-1.5 rounded-[1.5rem] shadow-sm flex items-center gap-1.5 border border-slate-200">
                 <button 
                   onClick={() => setActiveTab('preview')}
-                  className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'preview' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
+                  className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'preview' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
                   Visual Struk
                 </button>
                 <button 
                   onClick={() => setActiveTab('edit')}
-                  className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'edit' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
+                  className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'edit' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
                   Edit Data Toko
                 </button>
@@ -1331,14 +1331,14 @@ export default function App() {
               {activeTab === 'preview' ? (
                 <>
                   {/* Style Selector */}
-                  <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
+                  <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar -mx-2 px-2">
                     {LAYOUTS.map(l => (
                       <button
                         key={l.id}
                         onClick={() => setActiveLayout(l.id)}
-                        className={`shrink-0 px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest
+                        className={`shrink-0 px-5 py-2.5 rounded-xl text-[9px] font-black transition-all uppercase tracking-widest
                           ${activeLayout === l.id 
-                            ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' 
+                            ? 'bg-brand-600 text-white shadow-md shadow-brand-100' 
                             : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'}`}
                       >
                         {l.name}
@@ -1349,11 +1349,11 @@ export default function App() {
                   {/* Receipt Canvas */}
                   <motion.div 
                     layout
-                    className="flex justify-center items-center py-6 relative"
+                    className="flex justify-center items-center py-2 relative"
                   >
                     <div className="absolute inset-0 opacity-[0.03] pointer-events-none -z-10 bg-[radial-gradient(#000_1px,transparent_1px)] bg-[length:24px_24px]" />
                     
-                    <div className="shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] bg-white">
+                    <div className="shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] bg-white max-w-full overflow-hidden">
                       <ReceiptPreview 
                         ref={receiptRef}
                         data={data} 
@@ -1382,40 +1382,40 @@ export default function App() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 pt-4 pb-10 pb-safe shrink-0 no-print z-30 flex gap-4 max-w-4xl mx-auto w-full rounded-t-[2.5rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)]">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-6 pt-3 pb-8 pb-safe shrink-0 no-print z-30 flex gap-3 max-w-4xl mx-auto w-full rounded-t-[2rem] shadow-[0_-15px_30px_rgba(0,0,0,0.04)]">
             <button 
               onClick={shareDigitalReceipt}
               disabled={isPrinting}
-              className="w-16 h-16 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-emerald-100 active:scale-90 disabled:opacity-50"
+              className="w-14 h-14 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl flex items-center justify-center transition-all shadow-lg shadow-emerald-100 active:scale-90 disabled:opacity-50"
               title="Bagikan Struk Digital"
             >
-              {isPrinting ? <Loader2 className="w-7 h-7 animate-spin" /> : <Share2 className="w-7 h-7" />}
+              {isPrinting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Share2 className="w-6 h-6" />}
             </button>
             
             <button 
               onClick={handlePrintBT}
               disabled={isPrinting}
-              className="flex-1 bg-brand-600 active:scale-[0.98] disabled:bg-slate-400 text-white h-16 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-100"
+              className="flex-1 bg-brand-600 active:scale-[0.98] disabled:bg-slate-400 text-white h-14 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all shadow-xl shadow-brand-100"
             >
               {isPrinting ? (
                 <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   Printing...
                 </>
               ) : (
                 <>
-                  <Bluetooth className="w-6 h-6" />
-                  Cetak Struk (BT)
+                  <Bluetooth className="w-5 h-5" />
+                  Cetak (BT)
                 </>
               )}
             </button>
 
             <button 
               onClick={handlePrintSystem}
-              className="w-16 h-16 bg-slate-50 border border-slate-100 hover:bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+              className="w-14 h-14 bg-slate-50 border border-slate-100 hover:bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center transition-all active:scale-90"
               title="Cetak Sistem"
             >
-              <Printer className="w-7 h-7" />
+              <Printer className="w-6 h-6" />
             </button>
           </div>
         </motion.div>

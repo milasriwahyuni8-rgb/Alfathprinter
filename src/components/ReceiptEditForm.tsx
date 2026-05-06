@@ -29,7 +29,7 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
       inputMode={inputMode}
       value={(data[field] as string) || ''}
       onChange={(e) => handleChange(field, uppercase ? e.target.value.toUpperCase() : e.target.value)}
-      className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all shadow-sm"
+      className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-50 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all shadow-sm"
       placeholder={placeholder}
       spellCheck={false}
     />
@@ -59,14 +59,14 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
 
     return (
       <div className="relative">
-        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-sm pointer-events-none">Rp</span>
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs pointer-events-none">Rp</span>
         <input
           ref={inputRef}
           type="text"
           inputMode="numeric"
           value={displayValue}
           onChange={handleRawChange}
-          className="w-full pl-12 pr-5 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-display font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all shadow-sm"
+          className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-50 rounded-xl text-xs font-display font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:bg-white transition-all shadow-sm"
           placeholder={placeholder}
         />
       </div>
@@ -74,17 +74,17 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
   };
 
   return (
-    <div className="space-y-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Basic Info */}
-        <div className="space-y-6 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 border-b border-slate-50 pb-4">Toko & Waktu</h3>
+        <div className="space-y-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 border-b border-slate-50 pb-3">Toko & Waktu</h3>
           
           <InputGroup label="Nama Toko / Agen" icon={Store}>
             <TextInput field="namaToko" placeholder="Contoh: Alfath Cell" uppercase />
           </InputGroup>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <InputGroup label="Tanggal" icon={Calendar}>
               <TextInput field="tanggal" placeholder="YYYY-MM-DD" />
             </InputGroup>
@@ -99,8 +99,8 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
         </div>
 
         {/* Recipient Info */}
-        <div className="space-y-6 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 border-b border-slate-50 pb-4">Tujuan Transfer</h3>
+        <div className="space-y-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 border-b border-slate-50 pb-3">Tujuan Transfer</h3>
           
           <InputGroup label="Nama Penerima" icon={User}>
             <TextInput field="namaPenerima" placeholder="Nama Lengkap" uppercase />
@@ -116,28 +116,28 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
         </div>
 
         {/* Amount Info */}
-        <div className="space-y-6 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 border-b border-slate-50 pb-4">Nominal & Biaya</h3>
+        <div className="space-y-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 border-b border-slate-50 pb-3">Nominal & Biaya</h3>
           
           <InputGroup label="Nominal Transfer" icon={DollarSign}>
             <NumberInput field="nominal" placeholder="0" />
           </InputGroup>
 
-          <div className="flex items-center justify-between py-2 px-1">
-             <div className="flex items-center gap-3">
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${data.showAdminFee ? 'bg-brand-50 text-brand-600' : 'bg-slate-50 text-slate-300'}`}>
-                   <ShieldCheck size={20} />
+          <div className="flex items-center justify-between py-1 px-1">
+             <div className="flex items-center gap-2">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${data.showAdminFee ? 'bg-brand-50 text-brand-600' : 'bg-slate-50 text-slate-300'}`}>
+                   <ShieldCheck size={18} />
                 </div>
                 <div>
-                  <span className="text-sm font-bold text-slate-800 block leading-tight">Biaya Admin</span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">Tampilkan di Struk</span>
+                  <span className="text-xs font-bold text-slate-800 block leading-tight">Biaya Admin</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Tampilkan</span>
                 </div>
              </div>
              <button
                 onClick={() => handleChange('showAdminFee', !data.showAdminFee)}
-                className={`w-12 h-6 rounded-full transition-all relative ${data.showAdminFee ? 'bg-brand-600 shadow-lg shadow-brand-100' : 'bg-slate-200'}`}
+                className={`w-10 h-5 rounded-full transition-all relative ${data.showAdminFee ? 'bg-brand-600 shadow-lg shadow-brand-100' : 'bg-slate-200'}`}
              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${data.showAdminFee ? 'left-7' : 'left-1'}`}></div>
+                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${data.showAdminFee ? 'left-[1.25rem]' : 'left-0.5'}`}></div>
              </button>
           </div>
 
@@ -156,10 +156,10 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
             )}
           </AnimatePresence>
 
-          <div className="pt-6 mt-2 border-t border-slate-50">
+          <div className="pt-4 mt-2 border-t border-slate-50">
             <div className="flex justify-between items-center px-1">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Bayar</span>
-              <span className="text-2xl font-display font-black text-brand-600 tracking-tight">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+              <span className="text-xl font-display font-black text-brand-600 tracking-tight">
                 Rp {(data.nominal + (data.showAdminFee ? (data.admin || 0) : 0)).toLocaleString('id-ID')}
               </span>
             </div>
@@ -167,8 +167,8 @@ export const ReceiptEditForm: React.FC<ReceiptEditFormProps> = ({ data, onChange
         </div>
 
         {/* Footer & Status */}
-        <div className="space-y-6 bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 border-b border-slate-50 pb-4">Status & Pesan</h3>
+        <div className="space-y-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 border-b border-slate-50 pb-3">Status & Pesan</h3>
           
           <InputGroup label="Status Transaksi" icon={ShieldCheck}>
             <TextInput field="status" placeholder="TRANSAKSI BERHASIL" uppercase />
