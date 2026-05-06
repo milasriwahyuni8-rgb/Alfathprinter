@@ -1,7 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 function getAI(apiKey: string) {
-  return new GoogleGenerativeAI(apiKey.trim());
+  return new GoogleGenAI({ apiKey: apiKey.trim() });
 }
 
 export async function parseReceiptFromBase64(base64Data: string, mimeType: string, customKeys?: string) {
@@ -17,18 +17,10 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   
   // If no custom keys, try env vars
   if (keyList.length === 0) {
-    // Vite uses import.meta.env
     // @ts-ignore
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+    const envKey = process.env.GEMINI_API_KEY || "";
     if (envKey) {
       keyList.push(envKey);
-    } else {
-      // Fallback check for process.env only if process is defined (SSR or server-side)
-      try {
-        if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
-          keyList.push(process.env.GEMINI_API_KEY);
-        }
-      } catch (e) {}
     }
   }
 
@@ -42,16 +34,12 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   for (let i = 0; i < keyList.length; i++) {
     const currentKey = keyList[i];
     try {
-      const client = getAI(currentKey);
-      const model = client.getGenerativeModel({ 
-        model: "gemini-1.5-flash-latest", 
-        generationConfig: {
-          responseMimeType: "application/json",
-        }
-      });
-
-      const result = await model.generateContent([
-        { text: `Ekstrak data Bukti Transfer Bank (JSON murni):
+      const ai = getAI(currentKey);
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          { text: `Ekstrak data Bukti Transfer Bank (JSON murni):
           - tanggal (YYYY-MM-DD)
           - waktu (HH:mm)
           - kodeReferensi (Ref No/ID/RRN)
@@ -62,16 +50,19 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
           - admin (Biaya Admin, angka bulat, else 0)
 
           Abaikan total jika nominal dan admin terpisah. Fokus pada akurasi data bank. Sangat cepat.` },
-        {
-          inlineData: {
-            data: base64Data.split(",")[1],
-            mimeType: mimeType
+          {
+            inlineData: {
+              data: base64Data.split(",")[1],
+              mimeType: mimeType
+            }
           }
+        ],
+        config: {
+          responseMimeType: "application/json",
         }
-      ]);
+      });
 
-      const response = await result.response;
-      const text = response.text();
+      const text = response.text;
       return JSON.parse(text || "{}");
     } catch (error: any) {
       console.warn(`Key #${i + 1} failed:`, error.message);
@@ -139,11 +130,12 @@ export async function testGeminiKey(customKeys: string) {
   let lastError: any = null;
   for (let i = 0; i < keyList.length; i++) {
     try {
-      const client = getAI(keyList[i]);
-      const model = client.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-      const result = await model.generateContent("Say 'ok'");
-      const response = await result.response;
-      return !!response.text();
+      const ai = getAI(keyList[i]);
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: "Say 'ok'"
+      });
+      return !!response.text;
     } catch (error: any) {
       lastError = error;
     }

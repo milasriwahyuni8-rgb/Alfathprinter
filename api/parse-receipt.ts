@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -13,13 +13,7 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: "GEMINI_API_KEY belum diatur di Vercel Environment Variables." });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
+    const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `Ekstrak data Bukti Transfer Bank (JSON murni):
       - tanggal (YYYY-MM-DD)
@@ -33,18 +27,23 @@ export default async function handler(req: any, res: any) {
 
       Abaikan total jika nominal dan admin terpisah. Fokus pada akurasi data bank.`;
 
-    const result = await model.generateContent([
-      { text: prompt },
-      {
-        inlineData: {
-          data: base64Data.split(",")[1],
-          mimeType: mimeType
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        { text: prompt },
+        {
+          inlineData: {
+            data: base64Data.split(",")[1],
+            mimeType: mimeType
+          }
         }
+      ],
+      config: {
+        responseMimeType: "application/json",
       }
-    ]);
+    });
 
-    const response = await result.response;
-    res.status(200).json(JSON.parse(response.text() || "{}"));
+    res.status(200).json(JSON.parse(response.text || "{}"));
   } catch (error: any) {
     console.error("Vercel AI Error:", error);
     res.status(500).json({ error: error.message || "Gagal memproses gambar." });

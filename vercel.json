@@ -20,7 +20,7 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api|assets|.*\\..*).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
