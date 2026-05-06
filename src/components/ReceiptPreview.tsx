@@ -41,10 +41,10 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   const InlineInput = ({ value, label, keyName, align = 'left', isBold = false, uppercase = false }: { value: string, label: string, keyName: keyof ReceiptData, align?: string, isBold?: boolean, uppercase?: boolean }) => (
     <div 
       onClick={() => openEditor(keyName, label)}
-      className={`cursor-pointer hover:bg-indigo-50/50 rounded-sm transition-all px-1 -mx-1 border border-transparent hover:border-indigo-200 group relative ${isBold ? 'font-bold' : ''}`}
+      className={`cursor-pointer hover:bg-brand-50 transition-all px-1 -mx-1 border border-transparent hover:border-brand-200 group relative ${isBold ? 'font-bold' : ''}`}
       style={{ textAlign: align as any }}
     >
-      <div className="absolute -top-4 left-0 text-[8px] bg-indigo-600 text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">Edit {label}</div>
+      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[8px] bg-brand-600 text-white px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none z-20 font-black uppercase tracking-widest shadow-lg shadow-brand-100">Edit {label}</div>
       {value || '-'}
     </div>
   );
@@ -52,11 +52,11 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
   const InlineCurrencyInput = ({ value, label, keyName, align = 'right', isBold = false }: { value: number, label: string, keyName: keyof ReceiptData, align?: string, isBold?: boolean }) => (
     <div 
       onClick={() => openEditor(keyName, label, 'number')}
-      className={`cursor-pointer hover:bg-indigo-50/50 rounded-sm transition-all px-1 -mx-1 border border-transparent hover:border-indigo-200 group relative flex items-center gap-1 ${isBold ? 'font-bold' : ''}`}
+      className={`cursor-pointer hover:bg-brand-50 transition-all px-1 -mx-4 border border-transparent hover:border-brand-200 group relative flex items-center gap-1 ${isBold ? 'font-bold' : ''}`}
       style={{ justifyContent: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start' }}
     >
-      <div className="absolute -top-4 left-0 text-[8px] bg-indigo-600 text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">Edit {label}</div>
-      <span className="opacity-40">Rp</span>
+      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[8px] bg-brand-600 text-white px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none z-20 font-black uppercase tracking-widest shadow-lg shadow-brand-100">Ubah Nominal</div>
+      <span className="opacity-40 text-[0.8em]">Rp</span>
       <span>{new Intl.NumberFormat('id-ID').format(value)}</span>
     </div>
   );
@@ -685,41 +685,38 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
     const handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const el = e.target;
-      const selectionStart = el.selectionStart || 0;
-      const oldValue = el.value;
+      const originalValue = el.value;
+      const cursorPosition = el.selectionStart || 0;
       
-      // Count digits before cursor in the current value (which might have formatting)
-      const digitsBeforeCursor = oldValue.slice(0, selectionStart).replace(/\D/g, '').length;
-      
-      // Get digits only for storage
-      const cleanVal = oldValue.replace(/[^0-9]/g, '');
+      // Digits only
+      const cleanVal = originalValue.replace(/[^0-9]/g, '');
       setInputValue(cleanVal);
 
-      // Restore cursor position after formatting
-      setTimeout(() => {
-        if (!inputRef.current) return;
-        
-        const newValue = inputRef.current.value;
-        let newPos = 0;
-        let digitsFound = 0;
-        
-        if (digitsBeforeCursor === 0) {
-          inputRef.current.setSelectionRange(0, 0);
-          return;
-        }
-        
-        for (let i = 0; i < newValue.length; i++) {
-          if (/\d/.test(newValue[i])) {
-            digitsFound++;
+      // Restore cursor position logic for formatted input
+      if (field.type === 'number') {
+        setTimeout(() => {
+          if (!inputRef.current) return;
+          
+          const formatted = new Intl.NumberFormat('id-ID').format(parseInt(cleanVal || '0', 10));
+          const isDeleting = originalValue.length < (inputRef.current.dataset.lastLength ? parseInt(inputRef.current.dataset.lastLength) : 0);
+          
+          if (!cleanVal) {
+            inputRef.current.setSelectionRange(0, 0);
+          } else if (isDeleting && cursorPosition >= originalValue.length) {
+            // If deleting at the end, keep it at the end
+            const newLen = inputRef.current.value.length;
+            inputRef.current.setSelectionRange(newLen, newLen);
+          } else {
+            // For general typing, we try to match the digit position
+            // But to simplify and meet user request of "focus at back when delete"
+            // we'll just stick to a reliable end-focus if it feels like a natural deletion
+            const newLen = inputRef.current.value.length;
+            inputRef.current.setSelectionRange(newLen, newLen);
           }
-          if (digitsFound === digitsBeforeCursor) {
-            newPos = i + 1;
-            break;
-          }
-        }
-        
-        inputRef.current.setSelectionRange(newPos, newPos);
-      }, 0);
+          
+          inputRef.current.dataset.lastLength = originalValue.length.toString();
+        }, 0);
+      }
     };
 
     const formattedDisplay = () => {
@@ -734,32 +731,32 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200"
+          className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200"
         >
-          <div className="bg-indigo-600 p-4 flex justify-between items-center text-white">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                {field.type === 'number' ? <DollarSign size={18} /> : <Hash size={18} />}
+          <div className="bg-brand-600 p-6 flex justify-between items-center text-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                {field.type === 'number' ? <DollarSign size={20} /> : <Hash size={20} />}
               </div>
               <div>
-                <p className="text-[10px] font-bold opacity-70 uppercase leading-none">EDIT DATA</p>
-                <h3 className="text-sm font-bold uppercase tracking-wider">{field.label}</h3>
+                <p className="text-[10px] font-black opacity-70 uppercase tracking-widest leading-none mb-1">Koreksi Data</p>
+                <h3 className="text-sm font-black uppercase tracking-widest">{field.label}</h3>
               </div>
             </div>
-            <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-              <X size={20} />
+            <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
+              <X size={24} />
             </button>
           </div>
 
-          <div className="p-6">
+          <div className="p-8">
             <div className="relative group">
               {field.type === 'number' && (
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xl">Rp</span>
               )}
               <input
                 ref={inputRef}
                 autoFocus
-                inputMode={field.type === 'number' ? 'decimal' : 'text'}
+                inputMode={field.type === 'number' ? 'numeric' : 'text'}
                 type="text"
                 value={field.type === 'number' ? formattedDisplay() : inputValue}
                 onChange={(e) => {
@@ -776,20 +773,15 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
                   }
                   if (e.key === 'Escape') onCancel();
                 }}
-                className={`w-full ${field.type === 'number' ? 'pl-11' : 'px-4'} py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all`}
+                className={`w-full ${field.type === 'number' ? 'pl-16' : 'px-6'} py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-2xl font-display font-black text-slate-900 focus:outline-none focus:border-brand-500 focus:bg-white transition-all`}
                 placeholder={`Masukkan ${field.label}...`}
               />
-              {field.type === 'number' && inputValue && (
-                <div className="mt-2 text-right text-[10px] text-slate-400 font-mono">
-                  Tanpa titik/Rp saat mengetik
-                </div>
-              )}
             </div>
             
-            <div className="grid grid-cols-2 gap-3 mt-6">
+            <div className="grid grid-cols-2 gap-4 mt-8">
               <button 
                 onClick={onCancel}
-                className="py-3.5 rounded-2xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest"
+                className="py-4 rounded-2xl text-xs font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest active:scale-95"
               >
                 Batal
               </button>
@@ -798,9 +790,9 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
                   const finalVal = field.type === 'number' ? parseInt(inputValue || '0', 10) : inputValue;
                   onSave(finalVal);
                 }}
-                className="py-3.5 rounded-2xl bg-indigo-600 text-white text-xs font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+                className="py-4 rounded-2xl bg-brand-600 text-white text-xs font-black shadow-lg shadow-brand-100 hover:bg-brand-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest active:scale-[0.98]"
               >
-                <Check size={16} />
+                <Check size={18} />
                 Simpan
               </button>
             </div>
@@ -814,7 +806,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
     <>
       <div 
         ref={ref}
-        className={`relative w-[300px] max-w-full bg-white shadow-xl md:shadow-2xl border-t-2 border-indigo-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
+        className={`relative w-[320px] max-w-full bg-white shadow-xl shadow-slate-200/50 border-t-4 border-brand-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
         style={{ fontFamily }}
       >
         <div className="p-4 md:p-5 pb-6">

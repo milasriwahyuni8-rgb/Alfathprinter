@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db, handleFirestoreError, OperationType } from '../services/firebase';
 import { collection, doc, setDoc, updateDoc, onSnapshot, getDocs, deleteDoc } from 'firebase/firestore';
-import { Users, Building2, Plus, Check, Loader2, X, Trash2 } from 'lucide-react';
+import { Users, Building2, Plus, Check, Loader2, X, Trash2, MapPin, Shield, Mail } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'karyawan' | 'cabang'>('cabang');
@@ -51,9 +52,9 @@ export function AdminPanel() {
     }
   };
 
-  const handleApproveUser = async (userId: string, branchId: string, currentData: any) => {
+  const handleApproveUser = async (userId: string, branchId: string) => {
     try {
-      if (!branchId) return alert('Pilih cabang untuk karyawan ini');
+      if (!branchId) return;
       await updateDoc(doc(db, 'users', userId), {
         branchId,
         status: 'active'
@@ -72,114 +73,181 @@ export function AdminPanel() {
     }
   };
 
-  if (isLoading) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>;
+  if (isLoading) return (
+    <div className="flex h-64 items-center justify-center">
+      <Loader2 className="w-10 h-10 animate-spin text-brand-600" />
+    </div>
+  );
 
   return (
-    <div className="flex flex-col h-full bg-slate-50">
-      <div className="flex bg-white shadow-sm shrink-0 border-b border-slate-100">
+    <div className="flex flex-col gap-8">
+      {/* Tab Switcher */}
+      <div className="bg-white p-2 rounded-[2rem] shadow-sm flex items-center gap-2 border border-slate-100">
         <button 
           onClick={() => setActiveTab('cabang')}
-          className={`flex-1 py-4 text-xs font-black uppercase tracking-widest ${activeTab === 'cabang' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}
+          className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cabang' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
         >
-          <Building2 className="w-5 h-5 mx-auto mb-1" />
+          <Building2 className="w-5 h-5" />
           Cabang
         </button>
         <button 
           onClick={() => setActiveTab('karyawan')}
-          className={`flex-1 py-4 text-xs font-black uppercase tracking-widest ${activeTab === 'karyawan' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400'}`}
+          className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'karyawan' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
         >
-          <Users className="w-5 h-5 mx-auto mb-1" />
+          <Users className="w-5 h-5" />
           Karyawan
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <AnimatePresence mode="wait">
         {activeTab === 'cabang' ? (
-          <div className="space-y-6">
-            <form onSubmit={handleAddBranch} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-              <h3 className="text-sm font-bold text-slate-800">Tambah Cabang Baru</h3>
-              <div>
-                <input 
-                  type="text" 
-                  placeholder="Nama Cabang" 
-                  value={newBranchName}
-                  onChange={e => setNewBranchName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                  required
-                />
-              </div>
-              <div>
-                <input 
-                  type="text" 
-                  placeholder="Alamat (opsional)" 
-                  value={newBranchAddress}
-                  onChange={e => setNewBranchAddress(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
-              <button 
-                type="submit" 
-                disabled={isAddingBranch}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-              >
-                {isAddingBranch ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Tambah
-              </button>
-            </form>
-
-            <div className="space-y-3">
-              {branches.map(branch => (
-                <div key={branch.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-slate-800">{branch.name}</h4>
-                    {branch.address && <p className="text-xs text-slate-500">{branch.address}</p>}
-                  </div>
-                  <button onClick={() => handleDeleteBranch(branch.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+          <motion.div 
+            key="cabang"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-10"
+          >
+            {/* Add Branch Form */}
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-brand-600">
+                  <Plus className="w-6 h-6" />
                 </div>
-              ))}
+                <div>
+                  <h3 className="text-lg font-display font-black text-slate-900 uppercase tracking-tight leading-none">Tambah Cabang</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Registrasi Lokasi Baru</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleAddBranch} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lokasi</label>
+                  <input 
+                    type="text" 
+                    placeholder="Contoh: Alfathprint Cabang Garut" 
+                    value={newBranchName}
+                    onChange={e => setNewBranchName(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alamat Lengkap</label>
+                  <input 
+                    type="text" 
+                    placeholder="Jl. Raya No. 123..." 
+                    value={newBranchAddress}
+                    onChange={e => setNewBranchAddress(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={isAddingBranch}
+                  className="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white rounded-2xl py-4.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-brand-100 flex items-center justify-center gap-3 mt-4"
+                >
+                  {isAddingBranch ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                  Daftarkan Cabang
+                </button>
+              </form>
             </div>
-          </div>
+
+            {/* Branches List */}
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Daftar Cabang Aktif</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {branches.map(branch => (
+                  <motion.div 
+                    layout
+                    key={branch.id} 
+                    className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex items-center gap-5 hover:border-brand-200 transition-all group"
+                  >
+                    <div className="w-14 h-14 bg-slate-50 rounded-[1.25rem] flex items-center justify-center text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-50 transition-all border border-slate-50 group-hover:border-brand-100">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-display font-black text-slate-900 uppercase tracking-tight text-lg mb-0.5 truncate">{branch.name}</h4>
+                      <div className="flex items-center gap-2 text-slate-400">
+                         <MapPin className="w-3 h-3 shrink-0" />
+                         <p className="text-[10px] font-bold truncate uppercase tracking-widest">{branch.address || 'Alamat Belum Diatur'}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteBranch(branch.id)} 
+                      className="w-11 h-11 flex items-center justify-center text-rose-300 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all active:scale-90"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
         ) : (
-          <div className="space-y-4">
+          <motion.div 
+            key="karyawan"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-4"
+          >
             {users.filter(u => u.role !== 'admin').map(user => (
-              <div key={user.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-slate-800">{user.email}</h4>
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase mt-1 ${user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {user.status}
-                    </span>
+              <motion.div 
+                layout
+                key={user.id} 
+                className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6 group hover:border-brand-100 transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-slate-50 rounded-[1.25rem] flex items-center justify-center text-slate-300 group-hover:text-brand-500 transition-all border border-slate-50">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-display font-black text-slate-900 uppercase tracking-tight truncate">{user.email}</h4>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${user.status === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
+                        {user.status}
+                      </span>
+                      {user.branchId && (
+                         <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-brand-50 text-brand-600 border border-brand-100">
+                           {branches.find(b => b.id === user.branchId)?.name || 'Cabang Luar'}
+                         </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                {user.status !== 'active' ? (
-                  <div className="flex gap-2 items-center pt-2">
-                    <select 
-                      className="flex-1 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-medium"
-                      onChange={(e) => {
-                        handleApproveUser(user.id, e.target.value, user);
-                      }}
-                      defaultValue=""
-                    >
-                      <option value="" disabled>Pilih Cabang untuk Approve</option>
-                      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="text-xs text-indigo-600 font-bold bg-indigo-50 inline-block px-2 py-1 rounded">
-                    Cabang: {branches.find(b => b.id === user.branchId)?.name || user.branchId}
+                {user.status !== 'active' && (
+                  <div className="pt-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Otorisasi & Penempatan Cabang</p>
+                    <div className="flex gap-2">
+                      <select 
+                        className="flex-1 bg-slate-50 border-2 border-slate-50 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer"
+                        onChange={(e) => handleApproveUser(user.id, e.target.value)}
+                        defaultValue=""
+                      >
+                        <option value="" disabled>Pilih Cabang...</option>
+                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                      <button className="bg-brand-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-100 active:scale-95 transition-all">
+                        <Shield className="w-6 h-6" />
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
             {users.filter(u => u.role !== 'admin').length === 0 && (
-              <p className="text-center text-sm text-slate-400 py-10 font-medium">Belum ada karyawan.</p>
+              <div className="py-20 text-center">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Users className="w-8 h-8 text-slate-200" />
+                </div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Belum Ada Data Karyawan</p>
+              </div>
             )}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

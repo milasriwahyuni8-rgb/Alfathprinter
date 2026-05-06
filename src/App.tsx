@@ -9,7 +9,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { auth, db, loginWithGoogle, logout } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, setDoc as firestoreSetDoc, addDoc } from 'firebase/firestore';
-import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert, Key, RefreshCw, Share2 } from 'lucide-react';
+import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert, Key, RefreshCw, Share2, Search, Trash2, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import * as XLSX from 'xlsx';
@@ -65,6 +65,7 @@ export default function App() {
   const [activeLayout, setActiveLayout] = useState<typeof LAYOUTS[number]['id']>('pro');
   const [activeTab, setActiveTab] = useState<'preview' | 'edit'>('preview');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [keyStatus, setKeyStatus] = useState<'none' | 'valid' | 'invalid'>(data.customApiKey ? 'valid' : 'none');
@@ -83,6 +84,12 @@ export default function App() {
     } finally {
       setIsTestingKey(false);
     }
+  };
+
+  const deleteHistory = (id: string) => {
+    const newHistory = history.filter(h => h.id !== id);
+    setHistory(newHistory);
+    localStorage.setItem('alfathprint_history', JSON.stringify(newHistory));
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -662,14 +669,18 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="flex flex-col h-screen bg-[#f2f4f7] items-center justify-center p-6">
-        <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center flex flex-col items-center">
-          <div className="bg-indigo-50 p-4 rounded-full mb-6">
-            <Printer className="w-12 h-12 text-indigo-600" />
+      <div className="flex flex-col h-screen bg-[#f2f4f7] items-center justify-center p-6 font-sans">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-sm bg-white rounded-[2rem] p-10 shadow-2xl border border-white text-center flex flex-col items-center"
+        >
+          <div className="bg-brand-50 p-5 rounded-3xl mb-8">
+            <Printer className="w-12 h-12 text-brand-600" />
           </div>
-          <h1 className="text-3xl font-black italic tracking-tighter text-neutral-800 uppercase mb-2">Alfathprint</h1>
-          <p className="text-slate-500 font-medium text-sm mb-8 leading-relaxed">
-            Sistem Kasir & Struk Pintar<br/>Masuk untuk mengakses layanan.
+          <h1 className="text-4xl font-display font-black tracking-tighter text-slate-900 uppercase mb-3">Alfathprint</h1>
+          <p className="text-slate-500 font-medium text-sm mb-10 leading-relaxed px-4">
+            Sistem Kasir & Struk Pintar.<br/>Silakan masuk untuk melanjutkan.
           </p>
           <button 
             onClick={async () => {
@@ -678,11 +689,11 @@ export default function App() {
               catch(e) {}
               finally { setIsLoggingIn(false); }
             }}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+            className="w-full bg-brand-600 hover:bg-brand-700 active:scale-95 transition-all text-white font-bold py-4.5 rounded-2xl flex items-center justify-center gap-3 uppercase tracking-widest text-xs shadow-lg shadow-brand-100"
           >
             <LogIn className="w-5 h-5" /> Masuk dengan Google
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -705,593 +716,461 @@ export default function App() {
     );
   }
 
+  const NavItem = ({ id, icon: Icon, label, active }: { id: typeof view, icon: any, label: string, active: boolean }) => (
+    <button 
+      onClick={() => setView(id)} 
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer group ${
+        active 
+          ? 'bg-brand-50 text-brand-600 font-bold shadow-sm' 
+          : 'text-slate-500 hover:bg-slate-50 hover:text-brand-500'
+      }`}
+    >
+      <Icon className={`w-5 h-5 ${active ? 'text-brand-600' : 'text-slate-400 group-hover:text-brand-400'}`} />
+      <span className="text-xs uppercase tracking-widest">{label}</span>
+    </button>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen bg-[#f2f4f7] text-slate-800 font-sans">
+    <div className="flex h-screen bg-[#f2f4f7] text-slate-800 font-sans overflow-hidden">
       
-      {/* Processing Overlay */}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm px-6"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-xs w-full text-center"
-            >
-              <div className="relative">
-                <div className="w-20 h-20 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                   <Zap className="w-8 h-8 text-indigo-600 animate-pulse" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight italic">Analisis Gambar</h3>
-                <p className="text-sm text-slate-500 leading-relaxed font-medium">Kecerdasan Buatan (AI) sedang memproses data struk Anda...</p>
-              </div>
-              <div className="flex gap-1">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                    transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
-                    className="w-2 h-2 bg-indigo-600 rounded-full"
-                  />
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {view === 'home' ? (
-        // --- HOME SCREEN ---
-        <div className="flex flex-col h-screen overflow-hidden">
-          {/* Header */}
-          <header className="bg-[#f2f4f7] px-5 py-4 flex items-center justify-between shrink-0 no-print">
-            <div className="flex items-center gap-2">
-              <Printer className="w-8 h-8 text-neutral-700" />
-              <h1 className="text-3xl font-black italic tracking-tighter text-neutral-800 uppercase">Alfathprint</h1>
-            </div>
-            <div className="flex gap-2">
-              {isAdminUser && (
-                <button onClick={() => setView('admin')} className="p-2 text-indigo-600 hover:text-indigo-800 transition-colors">
-                  <ShieldAlert className="w-6 h-6" />
-                </button>
-              )}
-              <button onClick={testBluetooth} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
-                <Bluetooth className="w-6 h-6" />
-              </button>
-              <button onClick={() => setView('settings')} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
-                <Settings className="w-6 h-6" />
-              </button>
-            </div>
-          </header>
-
-          {/* Main Scrollable Area */}
-          <div className="flex-1 overflow-y-auto px-5 pb-32 no-print flex flex-col gap-4 overscroll-contain touch-pan-y">
-            
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start text-red-700 text-sm mb-2 animate-in fade-in">
-                <AlertCircle className="w-5 h-5 mr-2 shrink-0 mt-0.5" />
-                <p>{error}</p>
-              </div>
-            )}
-
-            {/* PWA Install Banner */}
-            {deferredPrompt && (
-              <div className="bg-indigo-600 p-4 rounded-2xl text-white flex items-center justify-between animate-in slide-in-from-top duration-500">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-lg">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm">Instal Aplikasi</h3>
-                    <p className="text-[10px] text-indigo-100 italic">Lebih cepat & stabil di Android</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={handleInstallClick}
-                  className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-transform"
-                >
-                  INSTAL
-                </button>
-              </div>
-            )}
-
-            {/* Main Action Banner */}
-            <div 
-              className="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-3xl p-6 text-white shadow-lg shadow-indigo-200 cursor-pointer active:scale-[0.98] transition-transform"
-              onClick={() => document.getElementById('fileInput')?.click()}
-            >
-              <div className="relative z-10">
-                <h2 className="text-2xl font-bold mb-2">Cetak Bukti Transfer</h2>
-                <p className="text-indigo-100 text-sm mb-6 max-w-[200px] leading-relaxed">
-                  Pilih bukti transfer dari galeri, ubah menjadi struk.
-                </p>
-                <div className="inline-flex">
-                  <input 
-                    id="fileInput"
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleImageSelected} 
-                    disabled={isLoading} 
-                    onClick={(e) => e.stopPropagation()} // Prevent double trigger
-                  />
-                  <div className="bg-white/20 hover:bg-white/30 backdrop-blur-md transition-colors p-4 rounded-2xl">
-                    {isLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -right-8 -top-8 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-400/30 rounded-full blur-2xl pointer-events-none"></div>
-            </div>
-
-            {/* Secondary Action */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between active:scale-[0.98] transition-transform">
-               <div className="flex items-center gap-4">
-                  <div className="bg-orange-50 text-orange-500 w-12 h-12 rounded-xl flex items-center justify-center">
-                    <Zap className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800">Cetak Token Listrik</h3>
-                    <p className="text-xs text-slate-400 mt-1">Upload screenshot PLN (Coming Soon)</p>
-                  </div>
-               </div>
-               <ChevronDown className="w-5 h-5 text-slate-300 -rotate-90" />
-            </div>
-
-            {/* Guide Link */}
-            <div className="flex justify-center mt-2 mb-4">
-               <button className="flex items-center gap-2 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-50 px-4 py-2 rounded-full text-sm font-semibold transition-colors">
-                  <BookOpen className="w-4 h-4" /> Panduan Upload & Share
-               </button>
-            </div>
-
-            {/* History Section */}
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-lg text-slate-800">Riwayat Cetak</h3>
-              <button 
-                onClick={() => setView('history')}
-                className="text-sm text-indigo-600 font-semibold hover:underline"
-              >
-                Lihat Semua
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {history.length > 0 ? (
-                history.slice(0, 5).map((entry) => (
-                  <div 
-                    key={entry.id} 
-                    onClick={() => {
-                        setData(entry.data);
-                        setView('preview');
-                    }}
-                    className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-transform"
-                  >
-                    <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center border border-slate-100">
-                      <FileText className="w-5 h-5 text-slate-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-slate-800 mb-0.5 uppercase truncate w-32">{entry.data.namaPenerima}</h4>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date(entry.timestamp).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})} • {new Date(entry.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           setData(entry.data);
-                           // Small delay to let state update
-                           setTimeout(shareDigitalReceipt, 100);
-                         }}
-                         className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
-                         title="Share"
-                       >
-                         <Share2 className="w-4 h-4" />
-                       </button>
-                       <div className="text-right ml-1">
-                          <p className="text-xs font-black text-indigo-600">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
-                       </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="bg-white p-10 rounded-3xl border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center">
-                  <Clock className="w-10 h-10 text-slate-200 mb-3" />
-                  <p className="text-xs text-slate-400 font-medium leading-relaxed">Belum ada riwayat cetak.<br/>Mulai dengan upload struk!</p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-slate-100">
-              <div className="bg-indigo-50/50 rounded-2xl p-6 border border-indigo-100/50">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                    <Smartphone className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-indigo-900">Cara Pakai Fitur Share</h3>
-                </div>
-                <ul className="space-y-3 text-sm text-indigo-800/80">
-                  <li className="flex gap-2">
-                    <span className="font-bold text-indigo-600">1.</span>
-                    <span>Klik ikon **"Install"** di pojok kanan atas layar ini atau gunakan menu browser **"Tambahkan ke Layar Utama"**.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-indigo-600">2.</span>
-                    <span>Buka galeri/aplikasi bank Anda dan pilih screenshot bukti transfer.</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-bold text-indigo-600">3.</span>
-                    <span>Klik **Share/Bagikan** dan pilih ikon **Alfathprint**. Data akan otomatis terproses!</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-8 text-center text-slate-300 text-[10px] font-bold uppercase tracking-widest pb-10">
-              © 2026 Alfathprint • Versi 2.0.1
-            </div>
-          </div>
-
-          {/* Bottom Navigation */}
-          <div className="bg-white border-t border-slate-200 p-2 fixed bottom-0 left-0 right-0 z-20 flex justify-around items-center no-print pb-safe">
-             <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 p-2 w-16 ${view === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>
-               <Home className="w-6 h-6" />
-               <span className="text-[10px] font-black uppercase">Home</span>
-             </button>
-             <button onClick={testBluetooth} className="flex flex-col items-center gap-1 p-2 w-16 text-slate-400 hover:text-slate-600">
-               <Bluetooth className="w-6 h-6" />
-               <span className="text-[10px] font-black uppercase">Printer</span>
-             </button>
-             <button onClick={() => setView('settings')} className={`flex flex-col items-center gap-1 p-2 w-16 ${view === 'settings' ? 'text-indigo-600' : 'text-slate-400'}`}>
-               <Settings className="w-6 h-6" />
-               <span className="text-[10px] font-black uppercase">Setting</span>
-             </button>
-          </div>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col shrink-0">
+        <div className="p-8 flex items-center gap-3">
+          <Printer className="w-8 h-8 text-brand-600" />
+          <h1 className="text-2xl font-display font-black tracking-tighter text-slate-900 uppercase">Alfathprint</h1>
         </div>
-      ) : view === 'settings' ? (
+        
+        <nav className="flex-1 px-4 py-2 space-y-2">
+          <NavItem id="home" icon={Home} label="Beranda" active={view === 'home'} />
+          <NavItem id="history" icon={History} label="Riwayat" active={view === 'history'} />
+          <NavItem id="settings" icon={Settings} label="Pengaturan" active={view === 'settings'} />
+          {isAdminUser && <NavItem id="admin" icon={ShieldAlert} label="Admin" active={view === 'admin'} />}
+        </nav>
+
+        <div className="p-4 border-t border-slate-100">
+          <div className="flex items-center gap-4 p-4 mb-4 bg-slate-50 rounded-2xl">
+            <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold uppercase">
+              {user.email?.[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold truncate">{user.displayName || 'User'}</p>
+              <p className="text-[10px] text-brand-600 font-black uppercase">{userProfile?.role || 'Karyawan'}</p>
+            </div>
+          </div>
+          <button 
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold text-xs uppercase tracking-widest transition-colors cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" /> Keluar
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex-1 flex flex-col min-w-0 relative h-full">
+        <AnimatePresence mode="wait">
+          {isLoading && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-6"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center gap-8 max-w-xs w-full text-center"
+              >
+                <div className="relative">
+                  <div className="w-24 h-24 border-4 border-slate-100 border-t-brand-600 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                     <Zap className="w-10 h-10 text-brand-600 animate-pulse" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-display font-black text-slate-900 uppercase tracking-tight italic">Analisis AI</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium">Sistem sedang mengekstrak data dari struk Anda dengan presisi tinggi...</p>
+                </div>
+                <div className="flex gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
+                      className="w-2.5 h-2.5 bg-brand-600 rounded-full"
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex-1 overflow-auto bg-white lg:bg-[#f2f4f7]">
+          <div className="w-full max-w-5xl mx-auto h-full flex flex-col">
+            <AnimatePresence mode="wait">
+              {view === 'home' ? (
+                <motion.div 
+                  key="home"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="flex flex-col min-h-full"
+                >
+                  <header className="px-6 py-8 flex items-center justify-between lg:hidden shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Printer className="w-8 h-8 text-brand-600" />
+                      <h1 className="text-3xl font-display font-black tracking-tighter text-slate-900 uppercase">Alfathprint</h1>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={testBluetooth} className="p-3 text-slate-400 hover:text-brand-500 transition-colors bg-white rounded-2xl shadow-sm">
+                        <Bluetooth className="w-6 h-6" />
+                      </button>
+                    </div>
+                  </header>
+
+                  <div className="flex-1 px-6 pb-32 flex flex-col gap-8 max-w-3xl mx-auto w-full py-0 lg:py-12">
+                    {error && (
+                      <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start text-rose-700 text-sm animate-in fade-in slide-in-from-top-4">
+                        <AlertCircle className="w-5 h-5 mr-3 shrink-0 mt-0.5" />
+                        <p className="font-medium">{error}</p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                       {/* Main Scan Card */}
+                       <div 
+                        className="bg-brand-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-brand-200/50 cursor-pointer active:scale-[0.98] transition-all group overflow-hidden relative"
+                        onClick={() => document.getElementById('fileInput')?.click()}
+                      >
+                        <div className="relative z-10">
+                          <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            {isLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
+                          </div>
+                          <h2 className="text-3xl font-display font-black mb-2 uppercase leading-tight tracking-tight">Pindai Struk</h2>
+                          <p className="text-brand-100 text-sm font-medium leading-relaxed max-w-[200px]">
+                            Otomatis ekstraksi data struk transfer dengan AI Alfath.
+                          </p>
+                          <input id="fileInput" type="file" accept="image/*" className="hidden" onChange={handleImageSelected} disabled={isLoading} />
+                        </div>
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                          <Zap className="w-32 h-32 rotate-12" />
+                        </div>
+                      </div>
+
+                      {/* Token PLN Card (Placeholder) */}
+                      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                        <div>
+                          <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-6">
+                            <Zap className="w-6 h-6" />
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-800 mb-1">Token Listrik</h3>
+                          <p className="text-xs text-slate-400 font-medium font-mono uppercase tracking-widest">Available Soon</p>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2 text-slate-300 text-[10px] font-bold uppercase tracking-widest">
+                          <CheckCircle2 className="w-3 h-3" /> Digital Copy System
+                        </div>
+                      </div>
+                    </div>
+
+                    <section className="space-y-4">
+                      <div className="flex items-center justify-between px-2">
+                        <h3 className="font-display font-black text-xl text-slate-900 uppercase">Riwayat Terbaru</h3>
+                        <button onClick={() => setView('history')} className="text-xs font-black text-brand-600 uppercase tracking-widest hover:underline">
+                          Lihat Semua
+                        </button>
+                      </div>
+
+                      <div className="grid gap-4">
+                        {history.length > 0 ? (
+                          history.slice(0, 5).map((entry) => (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              key={entry.id} 
+                              onClick={() => { setData(entry.data); setView('preview'); }}
+                              className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4 hover:border-brand-200 transition-all cursor-pointer group"
+                            >
+                              <div className="bg-slate-50 w-14 h-14 rounded-2xl flex items-center justify-center border border-slate-50 group-hover:bg-brand-50 transition-colors">
+                                <FileText className="w-6 h-6 text-slate-400 group-hover:text-brand-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-slate-800 text-sm mb-0.5 uppercase truncate">{entry.data.namaPenerima}</h4>
+                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                  <span>{entry.data.bankTujuan}</span>
+                                  <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                  <span>{new Date(entry.timestamp).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                 <div className="text-right">
+                                    <p className="text-sm font-black text-slate-900">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
+                                    <p className="text-[10px] text-brand-600 font-bold uppercase">Berhasil</p>
+                                 </div>
+                                 <button 
+                                   onClick={(e) => { e.stopPropagation(); setData(entry.data); setTimeout(shareDigitalReceipt, 100); }}
+                                   className="p-3 bg-brand-50 text-brand-600 rounded-2xl hover:bg-brand-100 transition-colors"
+                                 >
+                                   <Share2 className="w-4 h-4" />
+                                 </button>
+                              </div>
+                            </motion.div>
+                          ))
+                        ) : (
+                          <div className="py-20 flex flex-col items-center justify-center text-center">
+                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                              <Clock className="w-8 h-8 text-slate-200" />
+                            </div>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Belum ada riwayat transaksi</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+
+                    <div className="mt-10 py-10 border-t border-slate-100 text-center">
+                      <p className="text-[10px] text-slate-300 font-black uppercase tracking-[0.2em] mb-2">© 2026 Alfathprint Studio</p>
+                      <div className="flex items-center justify-center gap-4 text-xs font-bold text-slate-400">
+                        <span className="hover:text-brand-500 cursor-pointer">Panduan</span>
+                        <span className="hover:text-brand-500 cursor-pointer">Kebijakan</span>
+                        <span className="hover:text-brand-500 cursor-pointer">Support</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+                  ) : view === 'settings' ? (
         // --- SETTINGS SCREEN ---
-        <div className="flex flex-col h-screen bg-white no-print overflow-hidden">
-          <header className="px-5 py-6 flex items-center shrink-0 gap-4">
-            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500">
+        <motion.div 
+          key="settings"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          className="flex flex-col h-screen bg-white lg:bg-[#f2f4f7] no-print overflow-hidden"
+        >
+          <header className="px-6 py-6 bg-white border-b border-slate-100 flex items-center shrink-0 gap-4">
+            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-xl lg:hidden">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <div>
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Pengaturan</h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Kustomisasi Struk & Toko</p>
+              <h2 className="text-2xl font-display font-black text-slate-900 uppercase tracking-tight">Pengaturan</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">Kustomisasi Toko & Sistem</p>
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto px-5 space-y-8 pb-10 overscroll-contain touch-pan-y">
-            {/* Logo Settings */}
-            <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100 text-center">
-              <div className="w-24 h-24 bg-white rounded-2xl mx-auto mb-4 border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm relative group">
+          <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10 pb-32 lg:pb-12 overscroll-contain touch-pan-y max-w-4xl w-full mx-auto">
+            
+            {/* Logo Section */}
+            <section className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
+              <div className="w-28 h-28 bg-slate-50 rounded-[2rem] mx-auto mb-6 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner group relative">
                 {data.logoUrl ? (
-                  <img src={data.logoUrl} alt="Store Logo" className="w-full h-full object-contain" />
+                  <img src={data.logoUrl} alt="Store Logo" className="w-full h-full object-contain p-2" />
                 ) : (
                   <ImagePlus className="w-10 h-10 text-slate-200" />
                 )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                  <RefreshCw className="w-8 h-8 text-white animate-spin-slow" />
+                </div>
               </div>
-              <label className="bg-white border border-slate-200 px-6 py-3 rounded-2xl text-xs font-black text-slate-700 cursor-pointer hover:bg-white active:bg-slate-50 shadow-sm inline-block transition-colors">
-                GANTI LOGO STRUK
+              <label className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-3.5 rounded-2xl text-xs font-black cursor-pointer shadow-lg shadow-brand-100 inline-block transition-all active:scale-95 uppercase tracking-widest">
+                Unggah Logo Toko
                 <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
               </label>
               {data.logoUrl && (
                 <button 
                   onClick={() => saveSettings({ logoUrl: undefined })}
-                  className="block mx-auto mt-3 text-[10px] font-black text-rose-500 hover:underline uppercase tracking-widest"
+                  className="block mx-auto mt-4 text-[10px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest"
                 >
                   Hapus Logo
                 </button>
               )}
-            </div>
+            </section>
 
-            {/* Shop Info */}
-            <div className="space-y-5">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Profil Toko</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Toko</label>
-                  <input 
-                    type="text" 
-                    value={data.namaToko || ''}
-                    onChange={(e) => saveSettings({ namaToko: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="Contoh: ALFATHPRINT"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">TID Struk</label>
-                  <input 
-                    type="text" 
-                    value={data.tid || ''}
-                    onChange={(e) => saveSettings({ tid: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="Contoh: NK-000"
-                  />
-                </div>
+            {/* General Info */}
+            <section className="space-y-6">
+              <div className="px-2">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Informasi Dasar</h3>
+                <p className="text-[10px] text-slate-400 font-medium">Beban kerja struk utama Anda</p>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Teks Bawah 1</label>
-                <input 
-                  type="text" 
-                  value={data.footerLine1 || ''}
-                  onChange={(e) => saveSettings({ footerLine1: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Teks Bawah 2</label>
-                <input 
-                  type="text" 
-                  value={data.footerLine2 || ''}
-                  onChange={(e) => saveSettings({ footerLine2: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                />
-              </div>
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div>
-                  <span className="text-sm font-bold text-slate-800">Tampilkan Pengirim</span>
-                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Muncul di struk cetak</p>
-                </div>
-                <button 
-                  onClick={() => saveSettings({ showPengirim: !data.showPengirim })}
-                  className={`w-12 h-6 rounded-full transition-colors relative ${data.showPengirim ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.showPengirim ? 'left-7' : 'left-1'}`}></div>
-                </button>
-              </div>
-              {data.showPengirim && (
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Pengirim (Default)</label>
-                  <input 
-                    type="text" 
-                    value={data.namaPengirim || ''}
-                    onChange={(e) => saveSettings({ namaPengirim: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="Contoh: AGEN BERKAH"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* AI Settings */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Kecerdasan Buatan (AI)</h3>
               
-              <div 
-                className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors"
-                onClick={() => saveSettings({ aiEnabled: !data.aiEnabled })}
-              >
-                <div className="flex items-center gap-4">
-                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.aiEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
-                     <Zap className="w-6 h-6" />
-                   </div>
-                   <div>
-                     <h4 className="font-bold text-slate-800 text-sm">Gunakan AI Intelijen</h4>
-                     <p className="text-[10px] text-slate-400 font-medium">Otomatis ekstraksi data dari foto</p>
-                   </div>
-                </div>
-                <div 
-                  className={`w-12 h-6 rounded-full transition-colors relative ${data.aiEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.aiEnabled ? 'left-7' : 'left-1'}`}></div>
-                </div>
-              </div>
-
-              {!data.aiEnabled && (
-                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-amber-700 leading-tight font-bold">
-                    AI DINONAKTIFKAN: Anda harus mengisi nominal dan tujuan secara manual.
-                  </p>
-                </div>
-              )}
-
-              {data.aiEnabled && (
-                <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100 flex gap-1 p-1 h-12">
-                   <button 
-                     onClick={() => saveSettings({ scanEngine: 'ai' })}
-                     className={`flex-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${data.scanEngine === 'ai' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-400'}`}
-                   >
-                     <Zap className="w-3 h-3" />
-                     Mesin Cloud (AI)
-                   </button>
-                   <button 
-                     onClick={() => saveSettings({ scanEngine: 'local' })}
-                     className={`flex-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${data.scanEngine === 'local' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'text-slate-400'}`}
-                   >
-                     <Smartphone className="w-3 h-3" />
-                     Mesin Lokal (OCR)
-                   </button>
-                </div>
-              )}
-
-              {data.aiEnabled && data.scanEngine === 'local' && (
-                <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-2">
-                  <ShieldAlert className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-emerald-700 leading-tight font-bold">
-                    SCAN LOKAL AKTIF: Gratis selamanya, privasi aman, berjalan di HP Anda. Pastikan gambar tajam!
-                  </p>
-                </div>
-              )}
-
-              <div 
-                className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors"
-                onClick={() => saveSettings({ useFallbackAI: !data.useFallbackAI })}
-              >
-                <div className="flex items-center gap-4">
-                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.useFallbackAI ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
-                     <Zap className="w-6 h-6" />
-                   </div>
-                   <div>
-                     <h4 className="font-bold text-slate-800 text-sm">Mode Cadangan AI</h4>
-                     <p className="text-[10px] text-slate-400 font-medium">Aktifkan input manual jika kuota AI habis</p>
-                   </div>
-                </div>
-                <div 
-                  className={`w-12 h-6 rounded-full transition-colors relative ${data.useFallbackAI ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.useFallbackAI ? 'left-7' : 'left-1'}`}></div>
-                </div>
-              </div>
-              <div className="p-4 bg-indigo-50 rounded-2xl flex gap-3 items-start border border-indigo-100">
-                <AlertCircle className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                <p className="text-[10px] text-indigo-800 leading-relaxed font-semibold">
-                   Jika kuota harian AI habis, sistem akan langsung membuka form pengisian manual agar Anda tetap bisa mencetak struk dengan cepat.
-                </p>
-              </div>
-
-              {/* Custom API Key Section */}
-              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800">Milik Sendiri (BYOK)</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Gratis & Tanpa Limit</p>
-                  </div>
-                  <a 
-                    href="https://aistudio.google.com/app/apikey" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-lg"
-                  >
-                    Dapatkan Key
-                  </a>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Gemini API Key (Multi-Key Rotation)</label>
-                  <div className="relative">
-                    <textarea 
-                      value={data.customApiKey || ''}
-                      onChange={(e) => {
-                        saveSettings({ customApiKey: e.target.value });
-                        setKeyStatus('none');
-                      }}
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none transition-all pr-12 min-h-[80px]"
-                      placeholder="Input 1 atau lebih API Key, pisahkan dengan koma..."
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Toko</label>
+                    <input 
+                      type="text" 
+                      value={data.namaToko || ''}
+                      onChange={(e) => saveSettings({ namaToko: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"
+                      placeholder="ALFATHPRINT"
                     />
-                    {data.customApiKey && (
-                      <button 
-                        onClick={testApiKey}
-                        disabled={isTestingKey}
-                        className="absolute right-2 top-2 p-2 text-indigo-600 hover:bg-white rounded-lg transition-colors"
-                        title="Cek keaktifan Key"
-                      >
-                        {isTestingKey ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-                      </button>
-                    )}
                   </div>
-                  <p className="text-[9px] text-slate-400 mt-2 leading-relaxed">
-                    <span className="text-indigo-600 font-bold block mb-1">PRO TIP: Masukkan beberapa Key dipisah tanda koma (,) agar jika satu kena limit, aplikasi otomatis pakai Key lain.</span>
-                    Kunci disimpan <span className="text-emerald-600 font-bold italic">hanya di HP Anda</span>. 
-                    {keyStatus === 'valid' && <span className="text-emerald-500 font-bold ml-1">✓ Terhubung</span>}
-                    {keyStatus === 'invalid' && <span className="text-red-500 font-bold ml-1">✗ Ada Key Bermasalah</span>}
-                  </p>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">ID Terminal (TID)</label>
+                    <input 
+                      type="text" 
+                      value={data.tid || ''}
+                      onChange={(e) => saveSettings({ tid: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"
+                      placeholder="NK-000"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Teks Footer 1</label>
+                    <input 
+                      type="text" 
+                      value={data.footerLine1 || ''}
+                      onChange={(e) => saveSettings({ footerLine1: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Teks Footer 2</label>
+                    <input 
+                      type="text" 
+                      value={data.footerLine2 || ''}
+                      onChange={(e) => saveSettings({ footerLine2: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Bluetooth Test Section */}
-            <div className="pt-4 border-t border-slate-50 space-y-4">
-               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Pengujian Perangkat</h3>
-               <button 
-                  onClick={testBluetooth}
-                  disabled={isPrinting}
-                  className="w-full bg-neutral-900 active:bg-black text-white py-5 rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-colors shadow-xl"
-                >
-                  {isPrinting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Bluetooth className="w-5 h-5" />}
-                  TES CETAK BLUETOOTH
-                </button>
-                
+            {/* Intelligence Settings */}
+            <section className="space-y-6">
+              <div className="px-2">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Sistem Pintar (AI)</h3>
+                <p className="text-[10px] text-slate-400 font-medium">Pengaturan otomatisasi ekstraksi data</p>
+              </div>
+
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
                 <div 
-                  className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors"
-                  onClick={() => saveSettings({ showAdminFee: !data.showAdminFee })}
+                  className="p-8 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => saveSettings({ aiEnabled: !data.aiEnabled })}
                 >
-                  <div className="flex items-center gap-4">
-                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.showAdminFee ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
-                       <Zap className="w-6 h-6" />
-                     </div>
-                     <div>
-                       <h4 className="font-bold text-slate-800 text-sm">Aktifkan Biaya Admin</h4>
-                       <p className="text-[10px] text-slate-400 font-medium">Tampilkan baris Biaya Admin di struk</p>
-                     </div>
+                  <div className="flex items-center gap-5">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${data.aiEnabled ? 'bg-brand-50 text-brand-600' : 'bg-slate-100 text-slate-400'}`}>
+                      <Zap className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm mb-0.5">Ekstraksi AI Otomatis</h4>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Gunakan Gemini 3 Flash</p>
+                    </div>
                   </div>
-                  <div 
-                    className={`w-12 h-6 rounded-full transition-colors relative ${data.showAdminFee ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.showAdminFee ? 'left-7' : 'left-1'}`}></div>
+                  <div className={`w-14 h-7 rounded-full transition-all relative ${data.aiEnabled ? 'bg-brand-600' : 'bg-slate-300'}`}>
+                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-sm ${data.aiEnabled ? 'left-[2rem]' : 'left-1'}`}></div>
                   </div>
                 </div>
-                
-                <p className="text-[10px] text-slate-400 text-center mt-2 font-medium italic">Pastikan izin Bluetooth sudah diberikan ke browser.</p>
-            </div>
 
-            {/* PWA Help Section */}
-            <div className="bg-indigo-900/5 p-5 rounded-3xl border border-indigo-100 mb-4">
-              <h3 className="text-sm font-black text-indigo-900 mb-2 uppercase italic">Tips "Share ke Aplikasi"</h3>
-              <p className="text-[11px] text-indigo-700/70 leading-relaxed font-medium">
-                Agar nama <span className="font-bold">Alfathprint</span> muncul saat Anda klik "Share" di aplikasi Bank:
-              </p>
-              <ul className="mt-2 space-y-1 text-[10px] text-indigo-800 font-bold list-disc ml-4">
-                <li>Buka di Chrome Android atau Safari iOS.</li>
-                <li>Klik tombol menu browser (titik tiga) {"->"} <span className="text-indigo-600">"Instal"</span>.</li>
-                <li>Jika hanya muncul "Tambah ke Layar Utama", pastikan cache sudah dihapus {"&"} buka link aplikasi yang benar.</li>
-                <li>Setelah terinstal, Alfathprint bisa menerima "Share Gambar" langsung dari aplikasi Bank.</li>
-              </ul>
-            </div>
+                <AnimatePresence>
+                  {data.aiEnabled && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-8 pb-8 space-y-6 border-t border-slate-50 pt-8"
+                    >
+                      <div className="bg-slate-50 p-1.5 rounded-2xl flex gap-1.5">
+                        <button 
+                          onClick={() => saveSettings({ scanEngine: 'ai' })}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${data.scanEngine === 'ai' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                          Google Gemini (Cloud)
+                        </button>
+                        <button 
+                          onClick={() => saveSettings({ scanEngine: 'local' })}
+                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${data.scanEngine === 'local' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                          Tesseract OCR (Local)
+                        </button>
+                      </div>
 
-            {/* Admin Area Button (Settings) */}
-            {isAdminUser && (
-              <div className="pt-4 border-t border-slate-50">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Custom API Key (Rotasi Otomatis)</label>
+                          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[10px] font-black text-brand-600 uppercase hover:underline">Ambil Key Gratis</a>
+                        </div>
+                        <div className="relative">
+                          <textarea 
+                            value={data.customApiKey || ''}
+                            onChange={(e) => { saveSettings({ customApiKey: e.target.value }); setKeyStatus('none'); }}
+                            className="w-full bg-slate-50 border border-slate-100 rounded-3xl px-6 py-5 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all min-h-[120px] resize-none"
+                            placeholder="Key 1, Key 2, Key 3..."
+                          />
+                          <button 
+                            onClick={testApiKey}
+                            disabled={isTestingKey}
+                            className="absolute right-4 bottom-4 p-3 bg-white shadow-sm border border-slate-100 rounded-2xl text-brand-600 hover:bg-brand-50 transition-colors"
+                          >
+                            {isTestingKey ? <RefreshCw className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+                          </button>
+                        </div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest text-center">Pisahkan dengan koma untuk fitur rotasi otomatis</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </section>
+
+            {/* Account & Device */}
+            <section className="space-y-6">
+              <div className="px-2">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Perangkat & Akun</h3>
+                <p className="text-[10px] text-slate-400 font-medium">Manajemen koneksi printer dan sesi</p>
+              </div>
+
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 space-y-4">
                 <button 
-                  onClick={() => setView('admin')}
-                  className="w-full bg-indigo-50 border border-indigo-100 active:bg-indigo-100 text-indigo-600 py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-colors uppercase tracking-widest"
+                  onClick={testBluetooth}
+                  className="w-full bg-slate-900 hover:bg-black text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl shadow-slate-200 transition-all active:scale-[0.99]"
                 >
-                  <ShieldAlert className="w-5 h-5" />
-                  Buka Panel Admin
+                  <Bluetooth className="w-5 h-5" /> Hubungkan Printer BT
+                </button>
+                
+                <button 
+                  onClick={logout}
+                  className="w-full bg-white border border-rose-100 text-rose-500 hover:bg-rose-50 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-colors"
+                >
+                  <LogOut className="w-5 h-5" /> Keluar dari Sistem
                 </button>
               </div>
-            )}
+            </section>
 
-            {/* Logout button */}
-            <div className="pt-4 border-t border-slate-50">
-               <button 
-                  onClick={logout}
-                  className="w-full bg-white border border-rose-100 active:bg-rose-50 text-rose-500 py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-3 transition-colors uppercase tracking-widest"
-                >
-                  <LogOut className="w-5 h-5" />
-                  Keluar Akun
-                </button>
+            <div className="pt-10 text-center opacity-20 text-[10px] font-black uppercase tracking-[0.3em]">
+              Alfathprint V2.1.0 • 2026
             </div>
           </div>
-        </div>
+        </motion.div>
       ) : view === 'history' ? (
         // --- ALL HISTORY SCREEN ---
-        <div className="flex flex-col h-screen bg-slate-50 no-print overflow-hidden">
-          <header className="px-5 py-6 bg-white border-b border-slate-100 flex items-center shrink-0 gap-4">
-            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500">
+        <motion.div 
+          key="history"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          className="flex flex-col h-screen bg-[#f2f4f7] no-print overflow-hidden"
+        >
+          <header className="px-6 py-6 bg-white border-b border-slate-100 flex items-center shrink-0 gap-4">
+            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-xl lg:hidden">
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <div>
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Riwayat Struk</h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total: {history.length} Transaksi</p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-2xl font-display font-black text-slate-900 uppercase tracking-tight">Arsip Struk</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">Total {history.length} Lembar Tersimpan</p>
             </div>
-            <div className="ml-auto flex gap-2">
+            <div className="flex gap-2">
               <button 
                 onClick={exportToExcel}
-                className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100"
+                className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100 hover:bg-emerald-100 transition-colors"
                 title="Ekspor Excel"
               >
                 <Download className="w-5 h-5" />
               </button>
               <button 
                 onClick={exportToPDF}
-                className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center border border-rose-100"
+                className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center border border-rose-100 hover:bg-rose-100 transition-colors"
                 title="Ekspor PDF"
               >
                 <FileText className="w-5 h-5" />
@@ -1299,56 +1178,86 @@ export default function App() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-3 overscroll-contain">
+          <div className="px-6 py-4 bg-white border-b border-slate-100">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Cari nama atau nominal..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 pb-32 lg:pb-12 overscroll-contain max-w-4xl w-full mx-auto">
             {history.length > 0 ? (
-              history.map((entry) => (
-                <div 
-                  key={entry.id} 
-                  onClick={() => {
-                      setData(entry.data);
-                      setView('preview');
-                  }}
-                  className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-transform"
-                >
-                  <div className="bg-slate-50 w-12 h-12 rounded-2xl flex items-center justify-center border border-slate-50">
-                    <History className="w-5 h-5 text-indigo-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-slate-800 mb-0.5 uppercase">{entry.data.namaPenerima}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-loose">
-                      {entry.data.bankTujuan} • {new Date(entry.timestamp).toLocaleString('id-ID')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                     <p className="text-sm font-black text-slate-800">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
-                     {entry.data.cabang && <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase">{entry.data.cabang}</span>}
-                  </div>
-                </div>
-              ))
+              history
+                .filter(h => 
+                   h.data.namaPenerima?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                   h.data.nominal?.toString().includes(searchQuery) ||
+                   h.data.bankTujuan?.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((entry) => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={entry.id} 
+                    onClick={() => { setData(entry.data); setView('preview'); }}
+                    className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex items-center gap-4 hover:border-brand-200 transition-all cursor-pointer group"
+                  >
+                    <div className="bg-slate-50 w-14 h-14 rounded-[1.25rem] flex items-center justify-center border border-slate-50 group-hover:bg-brand-50 transition-colors">
+                      <History className="w-6 h-6 text-slate-300 group-hover:text-brand-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-800 mb-0.5 uppercase truncate">{entry.data.namaPenerima}</h4>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none flex items-center gap-2">
+                        <span>{entry.data.bankTujuan}</span>
+                        <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                        <span>{new Date(entry.timestamp).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'2-digit'})}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-base font-black text-slate-900">Rp {entry.data.nominal.toLocaleString('id-ID')}</p>
+                       <div className="flex items-center justify-end gap-1.5 mt-1">
+                         {entry.data.cabang && <span className="text-[8px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">{entry.data.cabang}</span>}
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); if(confirm('Hapus transaksi ini?')) deleteHistory(entry.id); }}
+                           className="p-1 text-rose-300 hover:text-rose-500 transition-colors"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                       </div>
+                    </div>
+                  </motion.div>
+                ))
             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
-                  <History className="w-16 h-16 text-slate-200 mb-4" />
-                  <p className="text-sm font-bold text-slate-400">TIDAK ADA DATA</p>
+                <div className="h-full flex flex-col items-center justify-center text-center py-20">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
+                    <History className="w-8 h-8 text-slate-200" />
+                  </div>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Belum Ada Data</p>
                 </div>
             )}
           </div>
           
-            <div className="p-5 bg-white border-t border-slate-100 no-print">
+          <div className="p-6 bg-white border-t border-slate-100 no-print">
             <button 
               onClick={() => {
                 const isAdmin = userProfile?.role === 'admin' || user?.email === 'peciwaru@gmail.com';
-                if(confirm(isAdmin ? "Hapus semua riwayat PERMANEN dari server dan lokal?" : "Hapus riwayat lokal?")) {
+                if(confirm(isAdmin ? "Hapus semua riwayat PERMANEN?" : "Bersihkan riwayat lokal?")) {
                    setHistory([]);
                    localStorage.removeItem('alfathprint_history');
-                   // If user is admin/owner, they might want to clear remote too, but we keep it safe for now
                 }
               }}
-              className="w-full py-4 rounded-2xl text-xs font-black text-rose-500 border-2 border-rose-50 hover:bg-rose-50 uppercase tracking-widest transition-colors"
+              className="w-full py-4.5 rounded-2xl text-[10px] font-black text-rose-500 border-2 border-rose-50 hover:bg-rose-50 uppercase tracking-[0.2em] transition-all active:scale-[0.98]"
             >
-              Hapus Riwayat Lokal
+              Hapus Semua Riwayat
             </button>
           </div>
-        </div>
+        </motion.div>
       ) : view === 'admin' ? (
          // --- ADMIN SCREEN ---
          <div className="flex flex-col h-screen bg-white no-print overflow-hidden">
@@ -1366,51 +1275,57 @@ export default function App() {
            </div>
          </div>
       ) : (
-        // --- PREVIEW SCREEN ---
-        <div className="flex flex-col h-screen overflow-hidden bg-[#f2f4f7]">
-          <header className="bg-white shadow-sm border-b border-slate-200 px-4 py-3 flex items-center shrink-0 z-20 no-print relative">
+        <motion.div 
+          key="preview"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="flex flex-col h-screen overflow-hidden bg-[#f2f4f7]"
+        >
+          <header className="bg-white shadow-sm border-b border-slate-100 px-6 py-4 flex items-center shrink-0 z-20 no-print relative">
             <button 
               onClick={() => setView('home')} 
-              className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 absolute left-4"
+              className="w-11 h-11 border border-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-6 h-6" />
             </button>
-            <h1 className="text-lg font-bold tracking-tight text-center w-full">Preview Struk</h1>
+            <div className="flex-1 text-center">
+              <h1 className="text-lg font-display font-black tracking-tight text-slate-900 uppercase">Preview Struk</h1>
+            </div>
+            <div className="w-11" /> {/* Spacer */}
           </header>
 
           <div className="flex-1 overflow-y-auto no-print flex flex-col items-center bg-[#f2f4f7] overscroll-contain touch-pan-y">
-            <div className="w-full max-w-md mx-auto p-4 flex flex-col gap-6 pb-32">
+            <div className="w-full max-w-2xl mx-auto p-6 flex flex-col gap-8 pb-40">
               
               {/* Tab Selector */}
-              <div className="bg-slate-200/50 p-1 rounded-xl flex gap-1">
+              <div className="bg-white p-2 rounded-[2rem] shadow-sm flex items-center gap-2 border border-slate-200">
                 <button 
                   onClick={() => setActiveTab('preview')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'preview' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                  className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'preview' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
-                  <FileText size={14} />
-                  LIHAT STRUK
+                  Visual Struk
                 </button>
                 <button 
                   onClick={() => setActiveTab('edit')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'edit' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                  className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'edit' ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
-                  <Edit3 size={14} />
-                  EDIT DATA
+                  Edit Data Toko
                 </button>
               </div>
 
               {activeTab === 'preview' ? (
                 <>
                   {/* Style Selector */}
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                  <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
                     {LAYOUTS.map(l => (
                       <button
                         key={l.id}
                         onClick={() => setActiveLayout(l.id)}
-                        className={`shrink-0 px-4 py-2.5 rounded-full text-xs font-bold transition-all snap-center whitespace-nowrap
+                        className={`shrink-0 px-6 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest
                           ${activeLayout === l.id 
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+                            ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' 
+                            : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'}`}
                       >
                         {l.name}
                       </button>
@@ -1418,21 +1333,25 @@ export default function App() {
                   </div>
 
                   {/* Receipt Canvas */}
-                  <div className="flex justify-center items-center py-4 relative">
-                    {/* Dotted bg behind receipt */}
-                    <div className="absolute inset-x-[-20px] inset-y-[-20px] opacity-20 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
+                  <motion.div 
+                    layout
+                    className="flex justify-center items-center py-6 relative"
+                  >
+                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none -z-10 bg-[radial-gradient(#000_1px,transparent_1px)] bg-[length:24px_24px]" />
                     
-                    <ReceiptPreview 
-                      ref={receiptRef}
-                      data={data} 
-                      onChange={setData} 
-                      layout={activeLayout}
-                    />
-                  </div>
+                    <div className="shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] bg-white">
+                      <ReceiptPreview 
+                        ref={receiptRef}
+                        data={data} 
+                        onChange={setData} 
+                        layout={activeLayout}
+                      />
+                    </div>
+                  </motion.div>
                   
-                  <div className="bg-white p-5 rounded-3xl border border-indigo-50 shadow-sm text-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 leading-relaxed">
-                      💡 Klik pada teks di dalam struk untuk edit cepat <br/> atau gunakan tab <span className="text-indigo-600">"Edit Data"</span> untuk pengisian detail.
+                  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                      💡 Klik pada nama, nominal, atau tanggal di dalam struk <br/> untuk melakukan koreksi cepat dengan keyboard HP Anda.
                     </p>
                   </div>
                 </>
@@ -1440,7 +1359,7 @@ export default function App() {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100"
+                  className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 max-w-xl mx-auto w-full"
                 >
                   <ReceiptEditForm data={data} onChange={setData} />
                 </motion.div>
@@ -1449,48 +1368,95 @@ export default function App() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="fixed bottom-0 left-0 right-0 bg-[#f2f4f7] px-4 pt-2 pb-6 pb-safe shrink-0 no-print z-20 flex gap-2 max-w-md mx-auto w-full">
+          <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 pt-4 pb-10 pb-safe shrink-0 no-print z-30 flex gap-4 max-w-4xl mx-auto w-full rounded-t-[2.5rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)]">
             <button 
               onClick={shareDigitalReceipt}
               disabled={isPrinting}
-              className="flex-none bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-lg shadow-emerald-100 disabled:opacity-50"
+              className="w-16 h-16 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg shadow-emerald-100 active:scale-90 disabled:opacity-50"
               title="Bagikan Struk Digital"
             >
-              {isPrinting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Share2 className="w-6 h-6" />}
+              {isPrinting ? <Loader2 className="w-7 h-7 animate-spin" /> : <Share2 className="w-7 h-7" />}
             </button>
-            <button 
-              onClick={handlePrintSystem}
-              className="flex-none bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-sm"
-              title="Cetak Sistem (PDF/Awan)"
-            >
-              <FileText className="w-6 h-6" />
-            </button>
+            
             <button 
               onClick={handlePrintBT}
               disabled={isPrinting}
-              className="flex-1 bg-indigo-600 active:bg-indigo-700 disabled:bg-indigo-400 text-white h-14 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-200 text-sm"
+              className="flex-1 bg-brand-600 active:scale-[0.98] disabled:bg-slate-400 text-white h-16 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-xl shadow-brand-100"
             >
               {isPrinting ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  MENGHUBUNGKAN...
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  Printing...
                 </>
               ) : (
                 <>
-                  <Bluetooth className="w-5 h-5" />
-                  CETAK LANGSUNG (BT)
+                  <Bluetooth className="w-6 h-6" />
+                  Cetak Struk (BT)
                 </>
               )}
             </button>
+
+            <button 
+              onClick={handlePrintSystem}
+              className="w-16 h-16 bg-slate-50 border border-slate-100 hover:bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+              title="Cetak Sistem"
+            >
+              <Printer className="w-7 h-7" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+            </AnimatePresence>
           </div>
         </div>
-      )}
+      </main>
+
+      {/* Mobile Navigation */}
+      <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2rem] flex items-center justify-around h-20 px-4 z-40 shadow-2xl shadow-slate-900/20">
+        <button 
+          onClick={() => setView('home')} 
+          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'home' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+        >
+          <Home className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase tracking-widest">Home</span>
+        </button>
+        <button 
+          onClick={() => setView('history')} 
+          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'history' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+        >
+          <History className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase tracking-widest">History</span>
+        </button>
+        <div className="relative -top-8">
+           <button 
+             onClick={() => document.getElementById('fileInput')?.click()}
+             className="w-16 h-16 bg-brand-600 text-white rounded-[2rem] flex items-center justify-center shadow-xl shadow-brand-500/40 border-4 border-[#f2f4f7] active:scale-95 transition-all"
+           >
+             <Zap className="w-7 h-7" />
+           </button>
+        </div>
+        <button 
+          onClick={() => setView('settings')} 
+          className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'settings' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[8px] font-black uppercase tracking-widest">Settings</span>
+        </button>
+        {isAdminUser && (
+          <button 
+            onClick={() => setView('admin')} 
+            className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${view === 'admin' ? 'text-brand-400 scale-110' : 'text-slate-400 opacity-60'}`}
+          >
+            <ShieldAlert className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Admin</span>
+          </button>
+        )}
+      </nav>
 
       {/* Print Only Container */}
       <div className="hidden print:flex print:absolute print:inset-0 print:items-start print:justify-start">
          <ReceiptPreview data={data} onChange={() => {}} layout={activeLayout} />
       </div>
-
     </div>
   );
 }
