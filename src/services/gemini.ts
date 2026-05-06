@@ -17,14 +17,17 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   
   // If no custom keys, try env vars
   if (keyList.length === 0) {
+    // Vite uses import.meta.env
     // @ts-ignore
     const envKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-    if (envKey) keyList.push(envKey);
-    else {
+    if (envKey) {
+      keyList.push(envKey);
+    } else {
+      // Fallback check for process.env only if process is defined (SSR or server-side)
       try {
-        // @ts-ignore
-        const pKey = process.env.GEMINI_API_KEY;
-        if (pKey) keyList.push(pKey);
+        if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
+          keyList.push(process.env.GEMINI_API_KEY);
+        }
       } catch (e) {}
     }
   }
@@ -41,7 +44,7 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
     try {
       const client = getAI(currentKey);
       const model = client.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest", 
         generationConfig: {
           responseMimeType: "application/json",
         }
@@ -137,7 +140,7 @@ export async function testGeminiKey(customKeys: string) {
   for (let i = 0; i < keyList.length; i++) {
     try {
       const client = getAI(keyList[i]);
-      const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = client.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
       const result = await model.generateContent("Say 'ok'");
       const response = await result.response;
       return !!response.text();

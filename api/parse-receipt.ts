@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -13,42 +13,38 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: "GEMINI_API_KEY belum diatur di Vercel Environment Variables." });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const prompt = `
-      Anda adalah AI sistem ekstraksi data struk transfer Alfathprint.
-      Analisis gambar ini dan keluarkan data JSON dengan format:
-      {
-        "tanggal": "YYYY-MM-DD",
-        "waktu": "HH:MM:SS",
-        "kodeReferensi": "ID Transaksi / Ref",
-        "bankTujuan": "Nama Bank (HURUF KAPITAL)",
-        "noRekening": "Nomor Rekening",
-        "namaPenerima": "Nama Penerima (HURUF KAPITAL)",
-        "nominal": 0
-      }
-      Pastikan nominal adalah angka saja tanpa titik/koma.
-    `;
-
-    const result = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: {
-        parts: [
-          { text: prompt },
-          {
-            inlineData: {
-              data: base64Data.split(",")[1],
-              mimeType: mimeType
-            }
-          }
-        ]
-      },
-      config: {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-latest",
+      generationConfig: {
         responseMimeType: "application/json",
       }
     });
+    
+    const prompt = `Ekstrak data Bukti Transfer Bank (JSON murni):
+      - tanggal (YYYY-MM-DD)
+      - waktu (HH:mm)
+      - kodeReferensi (Ref No/ID/RRN)
+      - bankTujuan (BCA/BRI/Mandiri/dsb)
+      - noRekening (Angka saja)
+      - namaPenerima (HURUF KAPITAL)
+      - nominal (Jumlah Transfer Asli, angka bulat)
+      - admin (Biaya Admin, angka bulat, else 0)
 
-    res.status(200).json(JSON.parse(result.text || "{}"));
+      Abaikan total jika nominal dan admin terpisah. Fokus pada akurasi data bank.`;
+
+    const result = await model.generateContent([
+      { text: prompt },
+      {
+        inlineData: {
+          data: base64Data.split(",")[1],
+          mimeType: mimeType
+        }
+      }
+    ]);
+
+    const response = await result.response;
+    res.status(200).json(JSON.parse(response.text() || "{}"));
   } catch (error: any) {
     console.error("Vercel AI Error:", error);
     res.status(500).json({ error: error.message || "Gagal memproses gambar." });
