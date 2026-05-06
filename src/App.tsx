@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { parseReceipt, parseReceiptFromBase64, testGeminiKey } from './services/gemini';
+import { parseReceipt, parseReceiptFromBase64, parseReceiptFromText, testGeminiKey } from './services/gemini';
 import { scanReceiptLocally } from './services/localOcr';
 import { printViaBluetooth } from './services/bluetooth';
 import { ReceiptData, HistoryEntry } from './types';
@@ -221,10 +221,16 @@ export default function App() {
         }
 
         let parsedData;
-        if (engine === 'local') {
-          parsedData = await scanReceiptLocally(sharedData.base64Data);
+        if (sharedData.type === 'text') {
+           console.log("Memproses shared text...");
+           parsedData = await parseReceiptFromText(sharedData.text, apiKey);
         } else {
-          parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, apiKey);
+           console.log("Memproses shared image...");
+           if (engine === 'local') {
+             parsedData = await scanReceiptLocally(sharedData.base64Data);
+           } else {
+             parsedData = await parseReceiptFromBase64(sharedData.base64Data, sharedData.mimeType, apiKey);
+           }
         }
 
         if (!parsedData) throw new Error("Gagal mengurai data struk.");

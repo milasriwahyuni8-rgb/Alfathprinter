@@ -116,6 +116,55 @@ export async function parseReceiptFromBase64(base64Data: string, mimeType: strin
   throw new Error(errorMessage);
 }
 
+export async function parseReceiptFromText(text: string, customKeys?: string) {
+  const keyList: string[] = [];
+  if (customKeys && customKeys.trim() !== "") {
+    customKeys.split(",").forEach(k => {
+      const trimmed = k.trim();
+      if (trimmed && trimmed !== "undefined") keyList.push(trimmed);
+    });
+  }
+  if (keyList.length === 0) {
+    // @ts-ignore
+    const envKey = process.env.GEMINI_API_KEY || "";
+    if (envKey) keyList.push(envKey);
+  }
+  if (keyList.length === 0) throw new Error("API Key tidak ditemukan.");
+
+  let lastError: any = null;
+  for (let i = 0; i < keyList.length; i++) {
+    try {
+      const ai = getAI(keyList[i]);
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          { text: `Ekstrak data Bukti Transfer Bank dari Teks Berikut (JSON murni):
+          - tanggal (YYYY-MM-DD)
+          - waktu (HH:mm)
+          - kodeReferensi (Ref No/ID/RRN)
+          - bankTujuan (BCA/BRI/Mandiri/dsb)
+          - noRekening (Angka saja)
+          - namaPenerima (HURUF KAPITAL)
+          - nominal (Jumlah Transfer Asli, angka bulat)
+          - admin (Biaya Admin, angka bulat, else 0)
+
+          Teks Mutasi:
+          ${text}` }
+        ],
+        config: {
+          responseMimeType: "application/json",
+        }
+      });
+      const result = response.text;
+      return JSON.parse(result || "{}");
+    } catch (error: any) {
+      lastError = error;
+      if (i < keyList.length - 1) continue;
+    }
+  }
+  throw lastError;
+}
+
 export async function testGeminiKey(customKeys: string) {
   const keyList: string[] = [];
   if (customKeys && customKeys.trim() !== "") {
