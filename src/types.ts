@@ -27,4 +27,5 @@ export interface ReceiptData {
   scanEngine?: 'ai' | 'local';
   customApiKey?: string;
   showAdminFee?: boolean;
+  showStoreName?: boolean;
 }

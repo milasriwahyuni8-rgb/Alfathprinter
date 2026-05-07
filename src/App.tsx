@@ -9,8 +9,9 @@ import { AdminPanel } from './components/AdminPanel';
 import { auth, db, loginWithGoogle, logout } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, collection, setDoc as firestoreSetDoc, addDoc } from 'firebase/firestore';
-import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert, Key, RefreshCw, Share2, Search, Trash2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, FileText, Smartphone, Bluetooth, CheckCircle2, ChevronDown, Printer, Settings, History, Home, Loader2, ImagePlus, Power, Zap, BookOpen, Edit3, ArrowLeft, Download, Clock, LogIn, LogOut, ShieldAlert, Key, RefreshCw, Share2, Search, Trash2, ShieldCheck, Landmark, CreditCard, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import toast, { Toaster } from 'react-hot-toast';
 
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -38,6 +39,7 @@ const INITIAL_DATA: ReceiptData = {
   scanEngine: 'ai',
   customApiKey: '',
   showAdminFee: true,
+  showStoreName: true,
 };
 
 const LAYOUTS = [
@@ -90,8 +92,21 @@ const Logo = ({ className = "", type = 'full' }: { className?: string, type?: 'f
 
 export default function App() {
   const [view, setView] = useState<'home' | 'preview' | 'settings' | 'history' | 'admin'>('home');
-  const [logoType, setLogoType] = useState<'full' | 'text' | 'none'>('full');
-  const [data, setData] = useState<ReceiptData>(INITIAL_DATA);
+  const [logoType, setLogoType] = useState<'full' | 'text' | 'none'>(() => {
+    return (localStorage.getItem('logoType') as any) || 'full';
+  });
+  const [data, setData] = useState<ReceiptData>(() => {
+    const saved = localStorage.getItem('alfathprint_settings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return { ...INITIAL_DATA, ...parsed };
+      } catch (e) {
+        return INITIAL_DATA;
+      }
+    }
+    return INITIAL_DATA;
+  });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   
   // Auth & Profile State
@@ -365,11 +380,11 @@ export default function App() {
     }
 
     const newSettings = {
-      namaToko: processedData.namaToko || data.namaToko,
-      cabang: processedData.cabang || data.cabang,
-      footerLine1: processedData.footerLine1 || data.footerLine1,
-      footerLine2: processedData.footerLine2 || data.footerLine2,
-      logoUrl: processedData.logoUrl || data.logoUrl,
+      namaToko: processedData.namaToko !== undefined ? processedData.namaToko : data.namaToko,
+      cabang: processedData.cabang !== undefined ? processedData.cabang : data.cabang,
+      footerLine1: processedData.footerLine1 !== undefined ? processedData.footerLine1 : data.footerLine1,
+      footerLine2: processedData.footerLine2 !== undefined ? processedData.footerLine2 : data.footerLine2,
+      logoUrl: processedData.logoUrl !== undefined ? processedData.logoUrl : data.logoUrl,
       namaPengirim: processedData.namaPengirim !== undefined ? processedData.namaPengirim : data.namaPengirim,
       showPengirim: processedData.showPengirim !== undefined ? processedData.showPengirim : data.showPengirim,
       useFallbackAI: processedData.useFallbackAI !== undefined ? processedData.useFallbackAI : data.useFallbackAI,
@@ -377,10 +392,16 @@ export default function App() {
       scanEngine: processedData.scanEngine !== undefined ? processedData.scanEngine : data.scanEngine,
       customApiKey: processedData.customApiKey !== undefined ? processedData.customApiKey : data.customApiKey,
       showAdminFee: processedData.showAdminFee !== undefined ? processedData.showAdminFee : data.showAdminFee,
-      tid: processedData.tid || data.tid,
+      showStoreName: processedData.showStoreName !== undefined ? processedData.showStoreName : data.showStoreName,
+      tid: processedData.tid !== undefined ? processedData.tid : data.tid,
     };
     localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...processedData }));
+  };
+
+  const persistLogoType = (type: 'full' | 'text' | 'none') => {
+    setLogoType(type);
+    localStorage.setItem('logoType', type);
   };
 
   const addToHistory = async (receipt: ReceiptData) => {
@@ -792,7 +813,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-[#f2f4f7] text-slate-800 font-sans overflow-hidden">
-      
+      <Toaster position="top-center" reverseOrder={false} />
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col shrink-0">
         <div className="p-8">
@@ -1167,7 +1188,7 @@ export default function App() {
                 {(['full', 'text', 'none'] as const).map((type) => (
                   <button
                     key={type}
-                    onClick={() => setLogoType(type)}
+                    onClick={() => persistLogoType(type)}
                     className={`flex-1 py-4 rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all ${
                       logoType === type 
                         ? 'bg-brand-600 text-white shadow-lg shadow-brand-100' 
@@ -1177,6 +1198,66 @@ export default function App() {
                     {type === 'full' ? 'Simbol & Teks' : type === 'text' ? 'Hanya Teks' : 'Tanpa Logo'}
                   </button>
                 ))}
+              </div>
+            </section>
+
+            {/* Receipt Configuration */}
+            <section className="space-y-6">
+              <div className="px-2">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Konfigurasi Struk</h3>
+                <p className="text-[10px] text-slate-400 font-medium">Pengaturan detail tampilan bukti transfer</p>
+              </div>
+
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-4 space-y-2">
+                {/* Store Name Toggle */}
+                <div 
+                  onClick={() => saveSettings({ showStoreName: !data.showStoreName })}
+                  className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl cursor-pointer hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-brand-600">
+                      <Landmark className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Nama Toko</p>
+                      <p className="text-[9px] text-slate-400 font-medium tracking-tight">Tampilkan nama toko di atas struk</p>
+                    </div>
+                  </div>
+                  <div className={`w-12 h-6 rounded-full relative transition-colors ${data.showStoreName ? 'bg-brand-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${data.showStoreName ? 'left-7' : 'left-1'}`}></div>
+                  </div>
+                </div>
+
+                {/* Admin Fee Toggle */}
+                <div 
+                  onClick={() => saveSettings({ showAdminFee: !data.showAdminFee })}
+                  className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl cursor-pointer hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-emerald-600">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Biaya Admin</p>
+                      <p className="text-[9px] text-slate-400 font-medium tracking-tight">Tampilkan baris biaya admin</p>
+                    </div>
+                  </div>
+                  <div className={`w-12 h-6 rounded-full relative transition-colors ${data.showAdminFee ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${data.showAdminFee ? 'left-7' : 'left-1'}`}></div>
+                  </div>
+                </div>
+
+                <div className="pt-4 px-2">
+                  <button 
+                    onClick={() => {
+                        saveSettings({});
+                        toast.success('Pengaturan berhasil disimpan!');
+                    }}
+                    className="w-full bg-brand-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-brand-100 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                  >
+                    <Check className="w-4 h-4" /> Simpan Pengaturan
+                  </button>
+                </div>
               </div>
             </section>
 
