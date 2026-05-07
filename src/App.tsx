@@ -469,7 +469,7 @@ export default function App() {
         namaPenerima: "TESTER",
         bankTujuan: "BLUETOOTH",
         kodeReferensi: "OK-123"
-      }, activeLayout);
+      }, activeLayout, 'text');
     } catch (err) {}
     finally { setIsPrinting(false); }
   };
@@ -548,7 +548,7 @@ export default function App() {
   const handlePrintBT = async () => {
     setIsPrinting(true);
     try {
-      await printViaBluetooth(data, activeLayout);
+      await printViaBluetooth(data, activeLayout, logoType);
       addToHistory(data);
     } catch (err) {
       // Error handled in bluetooth service via alert

@@ -1,6 +1,91 @@
 import { ReceiptData } from "../types";
 
-export const printViaBluetooth = async (data: ReceiptData, layout: string = 'standard') => {
+const getRasterImage = async (url: string) => {
+  try {
+    return await new Promise<Uint8Array | null>((resolve) => {
+      const img = new Image();
+      // Handle CORS for external URLs
+      if (url.startsWith('http')) {
+        img.crossOrigin = "Anonymous";
+      }
+      
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const maxWidth = 384; // Standard 58mm printer width in pixels
+          let w = img.width;
+          let h = img.height;
+          
+          if (w > maxWidth) {
+            h = Math.floor(h * (maxWidth / w));
+            w = maxWidth;
+          }
+          
+          // Width must be multiple of 8 for bits
+          w = Math.floor(w / 8) * 8;
+          if (w <= 0) {
+            console.warn("Invalid image width after scaling");
+            return resolve(null);
+          }
+          
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          
+          const imageData = ctx.getImageData(0, 0, w, h);
+          const pixels = imageData.data;
+          
+          const bytesPerRow = w / 8;
+          const raster = new Uint8Array(bytesPerRow * h);
+          
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              const i = (y * w + x) * 4;
+              // Simple grayscale + threshold (inverted for printer: black is 1)
+              const brightness = (pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114);
+              // If alpha is low, treat as white
+              const alpha = pixels[i + 3];
+              if (alpha > 128 && brightness < 150) {
+                raster[y * bytesPerRow + Math.floor(x / 8)] |= (0x80 >> (x % 8));
+              }
+            }
+          }
+          
+          const xL = bytesPerRow % 256;
+          const xH = Math.floor(bytesPerRow / 256);
+          const yL = h % 256;
+          const yH = Math.floor(h / 256);
+          
+          // GS v 0 m xL xH yL yH d1...dk
+          const header = new Uint8Array([0x1D, 0x76, 0x30, 0, xL, xH, yL, yH]);
+          const result = new Uint8Array(header.length + raster.length);
+          result.set(header);
+          result.set(raster, header.length);
+          console.log(`Raster image generated: ${w}x${h}, Total bytes: ${result.length}`);
+          resolve(result);
+        } catch (e) {
+          console.error("Canvas processing error:", e);
+          resolve(null);
+        }
+      };
+      
+      img.onerror = (e) => {
+        console.error("Image load failed for URL:", url, e);
+        resolve(null);
+      };
+      
+      img.src = url;
+    });
+  } catch (e) {
+    console.error("Image rasterization process error:", e);
+    return null;
+  }
+};
+
+export const printViaBluetooth = async (data: ReceiptData, layout: string = 'standard', logoType: 'full' | 'text' | 'none' = 'full') => {
   let device: any = null;
   try {
      const nav = navigator as any;
@@ -8,7 +93,6 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
          throw new Error("Web Bluetooth tidak didukung. Gunakan Chrome di Android.");
      }
 
-     // 1. Pilih Perangkat
      device = await nav.bluetooth.requestDevice({
        acceptAllDevices: true,
        optionalServices: [
@@ -18,11 +102,12 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
        ]
      });
      
-     // 2. Hubungkan
      const server = await device.gatt?.connect();
      if (!server) throw new Error("Gagal terhubung ke server Bluetooth.");
 
-     // 3. Cari Karakteristik Penulisan (Write)
+     // Stabilization delay
+     await new Promise(resolve => setTimeout(resolve, 500));
+
      const services = await server.getPrimaryServices();
      let char = null;
 
@@ -39,7 +124,9 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
 
      if (!char) throw new Error("Printer tidak mendukung pengiriman data langsung.");
 
-     // 4. Perintah ESC/POS & Encoding
+     // Characteristic selection delay
+     await new Promise(resolve => setTimeout(resolve, 200));
+
      const encoder = new TextEncoder();
      const esc = {
         init: [0x1B, 0x40],
@@ -53,51 +140,100 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
 
      const u = (arr: number[]) => new Uint8Array(arr);
      const line = (text: string) => encoder.encode(text + '\n');
+     
+     // Helper for aligned text (32 chars width)
+     const lv = (l: string, v: string) => {
+        const spaces = 32 - l.length - v.length;
+        return l + (spaces > 0 ? " ".repeat(spaces) : " ") + v;
+     };
 
      let steps: Uint8Array[] = [u(esc.init)];
 
-     // --- Header & Body ---
-     if (layout === 'pro') {
-        const lv = (l: string, v: string) => {
-           const spaces = 32 - l.length - v.length;
-           return l + (spaces > 0 ? " ".repeat(spaces) : " ") + v;
-        };
+     // --- Logo Section ---
+     if (logoType !== 'none') {
+        steps.push(u(esc.center));
         
-                 if (data.showStoreName) {
-            steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff), line(''));
-         }
+        let imageBytes: Uint8Array | null = null;
+        if (logoType === 'full') {
+           if (data.logoUrl) {
+              imageBytes = await getRasterImage(data.logoUrl);
+           } else {
+              // Try to generate the default "Phone + Flash" logo on the fly
+              imageBytes = await new Promise<Uint8Array | null>((resolve) => {
+                 const canvas = document.createElement('canvas');
+                 canvas.width = 120;
+                 canvas.height = 120;
+                 const ctx = canvas.getContext('2d')!;
+                 ctx.fillStyle = 'white';
+                 ctx.fillRect(0, 0, 120, 120);
+                 
+                 // Draw phone-like rect
+                 ctx.strokeStyle = 'black';
+                 ctx.lineWidth = 6;
+                 ctx.strokeRect(30, 20, 60, 80);
+                 
+                 // Draw flash
+                 ctx.fillStyle = 'black';
+                 ctx.beginPath();
+                 ctx.moveTo(70, 10);
+                 ctx.lineTo(40, 60);
+                 ctx.lineTo(65, 60);
+                 ctx.lineTo(55, 100);
+                 ctx.lineTo(85, 50);
+                 ctx.lineTo(60, 50);
+                 ctx.closePath();
+                 ctx.fill();
+                 
+                 const url = canvas.toDataURL();
+                 getRasterImage(url).then(resolve);
+              });
+           }
+        }
+        
+        if (imageBytes) {
+           steps.push(u([0x1B, 0x33, 0])); 
+           steps.push(imageBytes);
+           steps.push(u([0x1B, 0x32]));
+           steps.push(u(esc.feed));
+        } else {
+           steps.push(u(esc.bold), line(data.namaToko), u(esc.boldOff));
+        }
+        
+        if (logoType === 'full') {
+           steps.push(line("DIGITAL PAYMENT SOLUTION"), line(""));
+        } else {
+           steps.push(line(""));
+        }
+     }
+
+     // --- Body Section ---
+     if (layout === 'pro') {
         steps.push(u(esc.left), line(lv('TANGGAL', data.tanggal)));
         steps.push(line(lv('WAKTU', data.waktu)));
         steps.push(line('--------------------------------'));
         
         steps.push(u(esc.center), line('KODE REFERENSI'), line(data.kodeReferensi || '-'), line('--------------------------------'), line(''));
         
-        steps.push(line('DATA PENERIMA'));
-        steps.push(u(esc.left), line(lv('BANK TUJUAN', data.bankTujuan.toUpperCase())));
+        steps.push(u(esc.left), line('DATA PENERIMA'));
+        steps.push(line(lv('BANK TUJUAN', data.bankTujuan.toUpperCase())));
         steps.push(line(lv('NO REKENING', data.noRekening)));
         steps.push(line(lv('PENERIMA', data.namaPenerima.toUpperCase())));
         steps.push(line('--------------------------------'));
         
         steps.push(line(lv('NOMINAL', `RP ${data.nominal.toLocaleString('id-ID')}`)));
-                 if (data.showAdminFee) {
-            steps.push(line(lv('ADMIN FEE', `RP ${data.admin.toLocaleString('id-ID')}`)));
-         }
+        if (data.showAdminFee) {
+           steps.push(line(lv('ADMIN FEE', `RP ${data.admin.toLocaleString('id-ID')}`)));
+        }
         steps.push(line('--------------------------------'));
         
-                 const totalCalculated = data.nominal + (data.showAdminFee ? data.admin : 0);
-         steps.push(u(esc.bold), line(lv('TOTAL', `RP ${totalCalculated.toLocaleString('id-ID')}`)), u(esc.boldOff));
-        steps.push(line('--------------------------------'));
-        steps.push(line(' '));
-        steps.push(line('--------------------------------'));
+        const total = data.nominal + (data.showAdminFee ? data.admin : 0);
+        steps.push(u(esc.bold), line(lv('TOTAL', `RP ${total.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        steps.push(line('--------------------------------'), line(' '));
         
         steps.push(u(esc.center), line('** TRANSAKSI BERHASIL **'));
-        steps.push(line('SALINAN - VIA ALFATHPULSA APP'));
+        steps.push(line('VIA ALFATHPULSA APP'));
         steps.push(line('TERIMA KASIH'));
      } else {
-                 if (data.showStoreName) {
-            steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff));
-         }
-        
         if (layout === 'elegant') {
            steps.push(line('--- OFFICIAL RECEIPT ---'), line(''));
         } else if (layout === 'bank') {
@@ -109,60 +245,67 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         }
 
         steps.push(u(esc.left));
-        
         if (layout === 'elegant') {
-           steps.push(line(''), line(`Date: ${data.tanggal}`), line(`Time: ${data.waktu}`), line(`Ref : ${data.kodeReferensi}`), line('--------------------------------'));
+           steps.push(line(''), line(lv('DATE', data.tanggal)), line(lv('TIME', data.waktu)), line(lv('REF ', data.kodeReferensi)), line('--------------------------------'));
            if (data.showPengirim) {
               steps.push(u(esc.bold), line(`SENDER`), u(esc.boldOff), line(`${data.namaPengirim}`));
            }
            steps.push(u(esc.bold), line(`RECIPIENT`), u(esc.boldOff), line(`${data.namaPenerima}`));
            steps.push(u(esc.bold), line(`DESTINATION`), u(esc.boldOff), line(`${data.bankTujuan} | ${data.noRekening}`));
         } else if (layout === 'modern' || layout === 'bank') {
-           steps.push(line(`${data.tanggal} ${data.waktu}`), line(`NO REF: ${data.kodeReferensi}`), line('--------------------------------'));
+           steps.push(line(lv(data.tanggal, data.waktu)), line(`NO REF: ${data.kodeReferensi}`), line('--------------------------------'));
            if (data.showPengirim) {
               steps.push(u(esc.bold), line(`PENGIRIM: ${data.namaPengirim}`), u(esc.boldOff));
            }
            steps.push(u(esc.bold), line(`PENERIMA: ${data.namaPenerima}`), u(esc.boldOff));
-           steps.push(line(`BANK    : ${data.bankTujuan}`));
-           steps.push(line(`REKENING: ${data.noRekening}`));
+           steps.push(line(lv('BANK', data.bankTujuan)));
+           steps.push(line(lv('REKENING', data.noRekening)));
         } else {
-           steps.push(line(`TGL: ${data.tanggal}`), line(`JAM: ${data.waktu}`), line(`REF: ${data.kodeReferensi}`), line('--------------------------------'));
+           steps.push(line(lv('TGL', data.tanggal)), line(lv('JAM', data.waktu)), line(`REF: ${data.kodeReferensi}`), line('--------------------------------'));
            if (data.showPengirim) {
-              steps.push(line(`Pengirim: ${data.namaPengirim}`));
+              steps.push(line(lv('PENGIRIM', data.namaPengirim)));
            }
-           steps.push(line(`Penerima: ${data.namaPenerima}`));
-           steps.push(line(`Bank    : ${data.bankTujuan}`));
-           steps.push(line(`Rekening: ${data.noRekening}`));
+           steps.push(line(lv('PENERIMA', data.namaPenerima)));
+           steps.push(line(lv('BANK', data.bankTujuan)));
+           steps.push(line(lv('REKENING', data.noRekening)));
         }
         
         steps.push(line('--------------------------------'));
-                 steps.push(line(`NOMINAL   : Rp ${data.nominal.toLocaleString('id-ID')}`));
-                 if (data.showAdminFee) {
-            steps.push(line(`ADMIN FEE : Rp ${data.admin.toLocaleString('id-ID')}`));
-         }
-                 const totalCombined = data.nominal + (data.showAdminFee ? data.admin : 0);
-         steps.push(u(esc.bold), line(`TOTAL     : Rp ${totalCombined.toLocaleString('id-ID')}`), u(esc.boldOff));
-        steps.push(line('================================'));
+        steps.push(line(lv('NOMINAL', `Rp ${data.nominal.toLocaleString('id-ID')}`)));
+        if (data.showAdminFee) {
+           steps.push(line(lv('ADMIN FEE', `Rp ${data.admin.toLocaleString('id-ID')}`)));
+        }
+        const total = data.nominal + (data.showAdminFee ? data.admin : 0);
+        steps.push(u(esc.bold), line(lv('TOTAL', `Rp ${total.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        steps.push(line('================================'), line(''));
 
-        steps.push(u(esc.center), line(''));
-        steps.push(u(esc.bold), line(data.status), u(esc.boldOff), line(''));
-        steps.push(line(data.footerLine1));
-        steps.push(line(data.footerLine2));
+        steps.push(u(esc.center), u(esc.bold), line(data.status), u(esc.boldOff), line(''));
+        const f1 = data.footerLine1 || '';
+        const f2 = data.footerLine2 || '';
+        if (f1) steps.push(line(f1));
+        if (f2) steps.push(line(f2));
      }
      
      // Extra Feed at the end
-     steps.push(u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed));
+     steps.push(u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed), u(esc.feed));
 
-     // 5. Kirim ke Printer
      for (const step of steps) {
-        await char.writeValue(step);
+        // Smaller chunks for better compatibility with low-MTU devices
+        // Some printers have very small buffers (e.g. 64 or 128 bytes)
+        const chunkSize = 64; 
+        for (let i = 0; i < step.length; i += chunkSize) {
+          const chunk = step.slice(i, i + chunkSize);
+          await char.writeValue(chunk);
+          // Small delay between chunks to prevent buffer overflow
+          await new Promise(resolve => setTimeout(resolve, 15));
+        }
      }
      
      alert("Cetak berhasil dikirim!");
      device.gatt?.disconnect();
      
   } catch (error: any) {
-    if (error.name === 'NotFoundError') return; // User cancel
+    if (error.name === 'NotFoundError') return;
     console.error("Bluetooth Error:", error);
     alert(`Bluetooth Gagal: ${error.message}`);
   }

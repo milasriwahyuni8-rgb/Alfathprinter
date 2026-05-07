@@ -62,17 +62,52 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
     </div>
   );
 
+  const renderLogo = (align = 'center') => {
+    if (logoType === 'none') return null;
+    
+    return (
+      <div className={`flex flex-col mb-2 items-${align === 'right' ? 'end' : align === 'left' ? 'start' : 'center'}`}>
+        {logoType === 'full' && data.logoUrl ? (
+          <img 
+            src={data.logoUrl} 
+            alt="Logo" 
+            className="max-h-12 max-w-[120px] object-contain mb-1" 
+            referrerPolicy="no-referrer"
+          />
+        ) : logoType === 'full' ? (
+          <div className="flex flex-col items-center mb-1">
+             <div className="mb-2 relative">
+                <div className="w-10 h-10 border-2 border-black rounded-lg flex items-center justify-center relative">
+                   <div className="text-black transform -rotate-12">
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                   </div>
+                   <div className="absolute -top-1 -right-1 bg-white">
+                     <svg width="12" height="12" viewBox="0 0 24 24" fill="black" stroke="black" strokeWidth="1"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                   </div>
+                </div>
+             </div>
+             <div className="flex flex-col items-center leading-none">
+                <span className="font-black text-[12px] tracking-tighter uppercase">ALFATH<span className="opacity-40">PULSA</span></span>
+                <span className="text-[6px] font-bold opacity-30 uppercase tracking-[0.2em] mt-0.5">Digital Payment Solution</span>
+             </div>
+          </div>
+        ) : null}
+        {data.showStoreName && (
+          <div className={`text-xs font-bold uppercase tracking-tight ${align === 'center' ? 'text-center' : ''} mt-1`}>
+             <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align={align} isBold uppercase />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderStandard = () => (
     <>
-      {data.showStoreName && (
-        <>
-          <div className="text-center font-bold text-xs mb-0.5 uppercase tracking-tighter">
-            <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
-          </div>
-          <div className="text-center mb-0.5 select-none font-bold text-xs opacity-40">
-            {'=' .repeat(32)}
-          </div>
-        </>
+      {renderLogo('center')}
+      {(logoType !== 'none' || data.showStoreName) && (
+        <div className="text-center mb-0.5 select-none font-bold text-xs opacity-40">
+          {'=' .repeat(32)}
+        </div>
       )}
       
       <div className="flex justify-between items-center gap-1 leading-none py-0.25">
@@ -176,11 +211,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderModern = () => (
     <>
-      {data.showStoreName && (
-        <div className="text-center font-bold text-sm mb-1 uppercase tracking-tight">
-          <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
-        </div>
-      )}
+      {renderLogo('center')}
       
       <div className="text-center my-1 select-none font-bold text-xs tracking-[-1px]">
         {'===================================='}
@@ -269,11 +300,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderBank = () => (
     <>
-      {data.showStoreName && (
-        <div className="text-center font-bold text-sm mb-1 uppercase tracking-tight">
-          <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
-        </div>
-      )}
+      {renderLogo('center')}
       <div className="text-center font-bold mb-4 uppercase">
         BUKTI TRANSAKSI
       </div>
@@ -383,11 +410,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderElegant = () => (
     <div className="flex flex-col w-full">
-      {data.showStoreName && (
-        <div className="text-center font-bold text-base mb-1 tracking-widest uppercase">
-          <InlineInput value={data.namaToko || ''} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
-        </div>
-      )}
+      {renderLogo('center')}
       <div className="text-center text-[10px] mb-4 opacity-50 italic">
         --- OFFICIAL RECEIPT ---
       </div>
@@ -475,11 +498,8 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderPro = () => (
     <>
-      {data.showStoreName && (
-        <div className="text-center font-bold text-sm mb-2 uppercase tracking-tight border-b-2 border-slate-100 pb-2">
-          <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
-        </div>
-      )}
+      {renderLogo('center')}
+      {(logoType !== 'none' || data.showStoreName) && <div className="border-b-2 border-slate-100 mb-2"></div>}
       
       <div className="flex justify-between items-center gap-2">
         <span className="shrink-0 font-bold">TANGGAL</span>
@@ -583,14 +603,8 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
   const renderDigital = () => (
     <div className="flex flex-col gap-0 text-[11px] leading-tight font-mono">
-      {data.showStoreName && (
-        <>
-          <div className="text-center font-bold text-sm mb-1 uppercase tracking-wider">
-            <InlineInput value={data.namaToko} label="Nama Toko" keyName="namaToko" align="center" isBold uppercase />
-          </div>
-          <div className="text-center select-none opacity-40 -mt-1">{'='.repeat(32)}</div>
-        </>
-      )}
+      {renderLogo('center')}
+      {(logoType !== 'none' || data.showStoreName) && <div className="text-center select-none opacity-40 -mt-1 mb-1">{'='.repeat(32)}</div>}
       
       <div className="px-1 space-y-0.5">
         <div className="flex justify-between uppercase">
@@ -825,40 +839,10 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         className={`relative w-[320px] max-w-full bg-white shadow-xl shadow-slate-200/50 border-t-4 border-brand-600 print:w-[58mm] print:shadow-none print:border-none print:p-0 mx-auto overflow-hidden ${className}`} 
         style={{ fontFamily }}
       >
-        <div className="p-4 md:p-5 pb-6">
-          <div className="receipt-content flex flex-col gap-0.5 relative z-10 bg-white">
+        <div className="p-4 md:p-5 pb-6 overflow-x-hidden">
+          <div className="receipt-content flex flex-col gap-0.5 relative z-10 bg-white font-mono text-[11px] leading-tight text-slate-900 mx-auto" style={{ width: '100%', maxWidth: '300px' }}>
           
-          {/* Logo Section */}
-          {logoType !== 'none' && (
-            <div className="flex flex-col items-center mb-4 pt-2">
-              {logoType === 'full' && (
-                <div className="mb-2 relative">
-                   <div className="w-12 h-12 border-2 border-black rounded-lg flex items-center justify-center relative">
-                      <div className="text-black transform -rotate-12">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                      </div>
-                      <div className="absolute -top-1 -right-1 bg-white">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="black" stroke="black" strokeWidth="1"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                      </div>
-                   </div>
-                </div>
-              )}
-              <div className="text-center">
-                <h1 className="text-xl font-bold tracking-tighter leading-none text-black">
-                  ALFATH<span className="opacity-50">PULSA</span>
-                </h1>
-                {logoType === 'full' && (
-                  <p className="text-[8px] font-bold uppercase tracking-[0.2em] mt-1 opacity-40">Digital Payment</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {data.logoUrl && logoType === 'none' && (
-            <div className="flex justify-center mb-4 no-print-logo">
-              <img src={data.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
-            </div>
-          )}
+          {/* Layout Content */}
           {layout === 'standard' && renderStandard()}
           {layout === 'modern' && renderModern()}
           {layout === 'bank' && renderBank()}
