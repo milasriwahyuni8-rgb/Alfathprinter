@@ -856,7 +856,7 @@ export default function App() {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                    <div className="grid grid-cols-1 gap-6 relative">
                        {/* Main Scan Card */}
                        <div 
                         className="bg-brand-600 rounded-[2.5rem] p-6 text-white shadow-2xl shadow-brand-200/50 cursor-pointer active:scale-[0.98] transition-all group overflow-hidden relative"
@@ -874,20 +874,6 @@ export default function App() {
                         </div>
                         <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
                           <Zap className="w-24 h-24 rotate-12" />
-                        </div>
-                      </div>
-
-                      {/* Token PLN Card (Placeholder) */}
-                      <div className="bg-white rounded-[2.5rem] p-6 border border-slate-200 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                        <div>
-                          <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-4">
-                            <Zap className="w-5 h-5" />
-                          </div>
-                          <h3 className="text-lg font-bold text-slate-800 mb-0.5">Token Listrik</h3>
-                          <p className="text-[9px] text-slate-400 font-bold font-mono uppercase tracking-widest">Available Soon</p>
-                        </div>
-                        <div className="mt-3 flex items-center gap-2 text-slate-300 text-[9px] font-bold uppercase tracking-widest">
-                          <CheckCircle2 className="w-2.5 h-2.5" /> Digital Copy System
                         </div>
                       </div>
                     </div>
