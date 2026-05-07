@@ -75,20 +75,13 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
             referrerPolicy="no-referrer"
           />
         ) : logoType === 'full' ? (
-          <div className="flex flex-col items-center mb-1">
-             <div className="mb-2 relative">
-                <div className="w-10 h-10 border-2 border-black rounded-lg flex items-center justify-center relative">
-                   <div className="text-black transform -rotate-12">
-                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                   </div>
-                   <div className="absolute -top-1 -right-1 bg-white">
-                     <svg width="12" height="12" viewBox="0 0 24 24" fill="black" stroke="black" strokeWidth="1"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                   </div>
-                </div>
+          <div className="flex items-center gap-1 mb-1">
+             <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">
+                <ShieldCheck size={18} />
              </div>
-             <div className="flex flex-col items-center leading-none">
-                <span className="font-black text-[12px] tracking-tighter uppercase">ALFATH<span className="opacity-40">PULSA</span></span>
-                <span className="text-[6px] font-bold opacity-30 uppercase tracking-[0.2em] mt-0.5">Digital Payment Solution</span>
+             <div className="flex flex-col items-start leading-none">
+                <span className="font-black text-[10px] tracking-tighter">ALFATH<span className="text-brand-600">PULSA</span></span>
+                <span className="text-[6px] font-bold opacity-50 uppercase tracking-widest">Digital Payment</span>
              </div>
           </div>
         ) : null}

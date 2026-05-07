@@ -154,40 +154,8 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         steps.push(u(esc.center));
         
         let imageBytes: Uint8Array | null = null;
-        if (logoType === 'full') {
-           if (data.logoUrl) {
-              imageBytes = await getRasterImage(data.logoUrl);
-           } else {
-              // Try to generate the default "Phone + Flash" logo on the fly
-              imageBytes = await new Promise<Uint8Array | null>((resolve) => {
-                 const canvas = document.createElement('canvas');
-                 canvas.width = 120;
-                 canvas.height = 120;
-                 const ctx = canvas.getContext('2d')!;
-                 ctx.fillStyle = 'white';
-                 ctx.fillRect(0, 0, 120, 120);
-                 
-                 // Draw phone-like rect
-                 ctx.strokeStyle = 'black';
-                 ctx.lineWidth = 6;
-                 ctx.strokeRect(30, 20, 60, 80);
-                 
-                 // Draw flash
-                 ctx.fillStyle = 'black';
-                 ctx.beginPath();
-                 ctx.moveTo(70, 10);
-                 ctx.lineTo(40, 60);
-                 ctx.lineTo(65, 60);
-                 ctx.lineTo(55, 100);
-                 ctx.lineTo(85, 50);
-                 ctx.lineTo(60, 50);
-                 ctx.closePath();
-                 ctx.fill();
-                 
-                 const url = canvas.toDataURL();
-                 getRasterImage(url).then(resolve);
-              });
-           }
+        if (logoType === 'full' && data.logoUrl) {
+           imageBytes = await getRasterImage(data.logoUrl);
         }
         
         if (imageBytes) {
@@ -196,23 +164,33 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
            steps.push(u([0x1B, 0x32]));
            steps.push(u(esc.feed));
         } else {
-           steps.push(u(esc.bold), line(data.namaToko), u(esc.boldOff));
+           if (logoType === 'full') {
+              steps.push(u(esc.bold), line("ALFATH PULSA"), u(esc.boldOff));
+              steps.push(line("Digital Payment"));
+              steps.push(line(""));
+           }
         }
         
-        if (logoType === 'full') {
-           steps.push(line("DIGITAL PAYMENT SOLUTION"), line(""));
-        } else {
-           steps.push(line(""));
+        if (data.showStoreName) {
+           steps.push(u(esc.bold), line(data.namaToko.toUpperCase()), u(esc.boldOff));
+        }
+     }
+
+     if (logoType !== 'none' || data.showStoreName) {
+        if (layout === 'standard' || layout === 'modern' || layout === 'digital') {
+           steps.push(line('================================'));
         }
      }
 
      // --- Body Section ---
+     steps.push(u(esc.left));
+     
      if (layout === 'pro') {
-        steps.push(u(esc.left), line(lv('TANGGAL', data.tanggal)));
+        steps.push(line(lv('TANGGAL', data.tanggal)));
         steps.push(line(lv('WAKTU', data.waktu)));
         steps.push(line('--------------------------------'));
         
-        steps.push(u(esc.center), line('KODE REFERENSI'), line(data.kodeReferensi || '-'), line('--------------------------------'), line(''));
+        steps.push(u(esc.center), line('KODE REFERENSI'), u(esc.bold), line(data.kodeReferensi || '-'), u(esc.boldOff), line('--------------------------------'), line(''));
         
         steps.push(u(esc.left), line('DATA PENERIMA'));
         steps.push(line(lv('BANK TUJUAN', data.bankTujuan.toUpperCase())));
@@ -231,59 +209,127 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         steps.push(line('--------------------------------'), line(' '));
         
         steps.push(u(esc.center), line('** TRANSAKSI BERHASIL **'));
-        steps.push(line('VIA ALFATHPULSA APP'));
-        steps.push(line('TERIMA KASIH'));
-     } else {
-        if (layout === 'elegant') {
-           steps.push(line('--- OFFICIAL RECEIPT ---'), line(''));
-        } else if (layout === 'bank') {
-           steps.push(u(esc.bold), line('BUKTI TRANSAKSI'), u(esc.boldOff));
-        } else if (layout === 'modern') {
-           steps.push(line('================================'), u(esc.bold), line('BUKTI TRANSFER'), u(esc.boldOff), line('================================'));
-        } else {
-           steps.push(line('================================'));
+        if (data.footerLine1) steps.push(line(data.footerLine1));
+        if (data.footerLine2) steps.push(u(esc.bold), line(data.footerLine2), u(esc.boldOff));
+     } else if (layout === 'elegant') {
+        steps.push(u(esc.center), line('--- OFFICIAL RECEIPT ---'), line(''), u(esc.left));
+        steps.push(line(lv('DATE', data.tanggal)));
+        steps.push(line(lv('TIME', data.waktu)));
+        steps.push(line('--------------------------------'));
+        if (data.showPengirim && data.namaPengirim) {
+           steps.push(u(esc.bold), line(`SENDER`), u(esc.boldOff), line(data.namaPengirim.toUpperCase()));
         }
-
-        steps.push(u(esc.left));
-        if (layout === 'elegant') {
-           steps.push(line(''), line(lv('DATE', data.tanggal)), line(lv('TIME', data.waktu)), line(lv('REF ', data.kodeReferensi)), line('--------------------------------'));
-           if (data.showPengirim) {
-              steps.push(u(esc.bold), line(`SENDER`), u(esc.boldOff), line(`${data.namaPengirim}`));
-           }
-           steps.push(u(esc.bold), line(`RECIPIENT`), u(esc.boldOff), line(`${data.namaPenerima}`));
-           steps.push(u(esc.bold), line(`DESTINATION`), u(esc.boldOff), line(`${data.bankTujuan} | ${data.noRekening}`));
-        } else if (layout === 'modern' || layout === 'bank') {
-           steps.push(line(lv(data.tanggal, data.waktu)), line(`NO REF: ${data.kodeReferensi}`), line('--------------------------------'));
-           if (data.showPengirim) {
-              steps.push(u(esc.bold), line(`PENGIRIM: ${data.namaPengirim}`), u(esc.boldOff));
-           }
-           steps.push(u(esc.bold), line(`PENERIMA: ${data.namaPenerima}`), u(esc.boldOff));
-           steps.push(line(lv('BANK', data.bankTujuan)));
-           steps.push(line(lv('REKENING', data.noRekening)));
-        } else {
-           steps.push(line(lv('TGL', data.tanggal)), line(lv('JAM', data.waktu)), line(`REF: ${data.kodeReferensi}`), line('--------------------------------'));
-           if (data.showPengirim) {
-              steps.push(line(lv('PENGIRIM', data.namaPengirim)));
-           }
-           steps.push(line(lv('PENERIMA', data.namaPenerima)));
-           steps.push(line(lv('BANK', data.bankTujuan)));
-           steps.push(line(lv('REKENING', data.noRekening)));
-        }
+        steps.push(u(esc.bold), line(`RECIPIENT`), u(esc.boldOff), line(data.namaPenerima.toUpperCase()));
+        steps.push(u(esc.bold), line(`DESTINATION`), u(esc.boldOff), line(`${data.bankTujuan.toUpperCase()} | ${data.noRekening}`));
         
         steps.push(line('--------------------------------'));
         steps.push(line(lv('NOMINAL', `Rp ${data.nominal.toLocaleString('id-ID')}`)));
         if (data.showAdminFee) {
            steps.push(line(lv('ADMIN FEE', `Rp ${data.admin.toLocaleString('id-ID')}`)));
         }
+        steps.push(line('--------------------------------'));
+        const total = data.nominal + (data.showAdminFee ? data.admin : 0);
+        steps.push(u(esc.bold), line(lv('TOTAL', `Rp ${total.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        
+        steps.push(line(''), u(esc.center), line(`[ ${data.status.toUpperCase()} ]`));
+        if (data.footerLine1) steps.push(line(data.footerLine1));
+        if (data.footerLine2) steps.push(line(data.footerLine2));
+        steps.push(line(''), line(`REF: ${data.kodeReferensi}`));
+     } else if (layout === 'modern') {
+        steps.push(u(esc.center), u(esc.bold), line('BUKTI TRANSFER'), u(esc.boldOff), line('================================'), u(esc.left));
+        steps.push(line(lv(data.tanggal, data.waktu)));
+        steps.push(u(esc.bold), line(`NO REF: ${data.kodeReferensi}`), u(esc.boldOff));
+        steps.push(line('--------------------------------'));
+        if (data.showPengirim && data.namaPengirim) {
+           steps.push(u(esc.bold), line(`PENGIRIM: ${data.namaPengirim.toUpperCase()}`), u(esc.boldOff));
+        }
+        steps.push(u(esc.bold), line(`KEPADA:`), u(esc.boldOff));
+        steps.push(u(esc.bold), line(`PENERIMA: ${data.namaPenerima.toUpperCase()}`), u(esc.boldOff));
+        steps.push(u(esc.bold), line(`BANK    : ${data.bankTujuan.toUpperCase()}`), u(esc.boldOff));
+        steps.push(u(esc.bold), line(`REK     : ${data.noRekening}`), u(esc.boldOff));
+        steps.push(line('--------------------------------'));
+        steps.push(line(lv('NOMINAL', `Rp ${data.nominal.toLocaleString('id-ID')}`)));
+        if (data.showAdminFee) {
+           steps.push(line(lv('ADMIN FEE', `Rp ${data.admin.toLocaleString('id-ID')}`)));
+        }
+        steps.push(line('--------------------------------'));
+        const total = data.nominal + (data.showAdminFee ? data.admin : 0);
+        steps.push(u(esc.center), line('TOTAL BAYAR'));
+        steps.push(u(esc.bold), line(`Rp ${total.toLocaleString('id-ID')}`), u(esc.boldOff));
+        steps.push(line(''));
+        steps.push(u(esc.bold), line(`** ${data.status.toUpperCase()} **`), u(esc.boldOff));
+        if (data.footerLine1) steps.push(line(data.footerLine1));
+        if (data.footerLine2) steps.push(u(esc.bold), line(data.footerLine2), u(esc.boldOff));
+     } else if (layout === 'bank') {
+        steps.push(u(esc.center), u(esc.bold), line('BUKTI TRANSAKSI'), u(esc.boldOff), line(''), u(esc.left));
+        steps.push(u(esc.bold), line(lv(data.tanggal, data.waktu)), u(esc.boldOff));
+        steps.push(u(esc.bold), line(lv('ID REF', `: ${data.kodeReferensi}`)), u(esc.boldOff));
+        steps.push(u(esc.bold), line(lv('NO REF', `: ${data.kodeReferensi}`)), u(esc.boldOff));
+        if (data.showPengirim && data.namaPengirim) {
+           steps.push(u(esc.bold), line(lv('PENGIRIM', `: ${data.namaPengirim.toUpperCase()}`)), u(esc.boldOff));
+        }
+        steps.push(u(esc.bold), line(lv('TRANSAKSI', `: TRANSFER BANK`)), u(esc.boldOff));
+        steps.push(u(esc.bold), line(lv('BANK TUJUAN', `: ${data.bankTujuan.toUpperCase()}`)), u(esc.boldOff));
+        steps.push(u(esc.bold), line(lv('NO REKENING', `: ${data.noRekening}`)), u(esc.boldOff));
+        steps.push(u(esc.bold), line(lv('PENERIMA', `: ${data.namaPenerima.toUpperCase()}`)), u(esc.boldOff));
+        
+        steps.push(u(esc.bold), line(lv('JUMLAH', `: Rp ${data.nominal.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        if (data.showAdminFee) {
+           steps.push(u(esc.bold), line(lv('ADMIN FEE', `: Rp ${data.admin.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        }
+        const total = data.nominal + (data.showAdminFee ? data.admin : 0);
+        steps.push(u(esc.bold), line(lv('TOTAL', `: Rp ${total.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        const statusStr = data.status === 'TRANSAKSI BERHASIL' ? 'SUKSES' : 'PENDING';
+        steps.push(u(esc.bold), line(lv('STATUS', `: ${statusStr}`)), u(esc.boldOff));
+        steps.push(line(''));
+        steps.push(u(esc.center), u(esc.bold), line(data.footerLine2 || ''), u(esc.boldOff));
+        steps.push(line(data.footerLine1 || ''));
+     } else if (layout === 'digital') {
+        steps.push(line(lv('TANGGAL', data.tanggal)));
+        steps.push(line(lv('WAKTU', data.waktu)));
+        steps.push(line('--------------------------------'));
+        steps.push(u(esc.center), line('KODE REFERENSI'), u(esc.bold), line(data.kodeReferensi || '-'), u(esc.boldOff), line('--------------------------------'));
+        steps.push(line('DATA PENERIMA'));
+        steps.push(u(esc.bold), line(lv('BANK TUJUAN', data.bankTujuan.toUpperCase())), u(esc.boldOff));
+        steps.push(line(lv('NO REKENING', data.noRekening)));
+        steps.push(u(esc.bold), line(lv('PENERIMA', data.namaPenerima.toUpperCase())), u(esc.boldOff));
+        steps.push(line('--------------------------------'));
+        steps.push(u(esc.bold), line(lv('NOMINAL', `Rp ${data.nominal.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        if (data.showAdminFee) {
+           steps.push(u(esc.bold), line(lv('ADMIN FEE', `Rp ${data.admin.toLocaleString('id-ID')}`)), u(esc.boldOff));
+        }
+        steps.push(line('================================'));
+        const total = data.nominal + (data.showAdminFee ? data.admin : 0);
+        steps.push(line(lv('TOTAL', `Rp ${total.toLocaleString('id-ID')}`)));
+        steps.push(line('================================'), line(''));
+        steps.push(u(esc.bold), line(data.status), u(esc.boldOff));
+        if (data.footerLine1) steps.push(line(data.footerLine1));
+        if (data.footerLine2) steps.push(u(esc.bold), line(data.footerLine2), u(esc.boldOff));
+        steps.push(line(`TID: ${data.tid || 'NK-000'}`));
+     } else {
+        // Standard Layout
+        steps.push(line(lv('TANGGAL', data.tanggal)));
+        steps.push(line(lv('WAKTU', data.waktu)));
+        steps.push(line(lv('REFF', data.kodeReferensi)));
+        steps.push(line('--------------------------------'));
+        if (data.showPengirim && data.namaPengirim) {
+           steps.push(line(lv('DR', data.namaPengirim.toUpperCase())));
+        }
+        steps.push(u(esc.bold), line(lv('NAMA', data.namaPenerima.toUpperCase())), u(esc.boldOff));
+        steps.push(line(lv('BANK', data.bankTujuan.toUpperCase())));
+        steps.push(line(lv('REK', data.noRekening)));
+        steps.push(line('--------------------------------'));
+        steps.push(line(lv('NOMINAL', `Rp ${data.nominal.toLocaleString('id-ID')}`)));
+        if (data.showAdminFee) {
+           steps.push(line(lv('ADMIN FEE', `Rp ${data.admin.toLocaleString('id-ID')}`)));
+        }
+        steps.push(line('================================'));
         const total = data.nominal + (data.showAdminFee ? data.admin : 0);
         steps.push(u(esc.bold), line(lv('TOTAL', `Rp ${total.toLocaleString('id-ID')}`)), u(esc.boldOff));
         steps.push(line('================================'), line(''));
-
-        steps.push(u(esc.center), u(esc.bold), line(data.status), u(esc.boldOff), line(''));
-        const f1 = data.footerLine1 || '';
-        const f2 = data.footerLine2 || '';
-        if (f1) steps.push(line(f1));
-        if (f2) steps.push(line(f2));
+        steps.push(u(esc.center), u(esc.bold), line(data.status.toUpperCase()), u(esc.boldOff));
+        if (data.footerLine1) steps.push(line(data.footerLine1));
+        if (data.footerLine2) steps.push(u(esc.bold), line(data.footerLine2), u(esc.boldOff));
      }
      
      // Extra Feed at the end
