@@ -96,7 +96,7 @@ export default function App() {
     return (localStorage.getItem('logoType') as any) || 'full';
   });
   const [data, setData] = useState<ReceiptData>(() => {
-    const saved = localStorage.getItem('alfathprint_settings');
+    const saved = localStorage.getItem('alfathpulsa_settings') || localStorage.getItem('alfathprint_settings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -152,7 +152,7 @@ export default function App() {
   const deleteHistory = (id: string) => {
     const newHistory = history.filter(h => h.id !== id);
     setHistory(newHistory);
-    localStorage.setItem('alfathprint_history', JSON.stringify(newHistory));
+    localStorage.setItem('alfathpulsa_history', JSON.stringify(newHistory));
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -210,7 +210,7 @@ export default function App() {
   useEffect(() => {
     // 1. Load settings first
     try {
-      const savedSettings = localStorage.getItem('alfathprint_settings');
+      const savedSettings = localStorage.getItem('alfathpulsa_settings') || localStorage.getItem('alfathprint_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         setData(prev => ({
@@ -393,9 +393,10 @@ export default function App() {
       customApiKey: processedData.customApiKey !== undefined ? processedData.customApiKey : data.customApiKey,
       showAdminFee: processedData.showAdminFee !== undefined ? processedData.showAdminFee : data.showAdminFee,
       showStoreName: processedData.showStoreName !== undefined ? processedData.showStoreName : data.showStoreName,
+      admin: processedData.admin !== undefined ? processedData.admin : data.admin,
       tid: processedData.tid !== undefined ? processedData.tid : data.tid,
     };
-    localStorage.setItem('alfathprint_settings', JSON.stringify(newSettings));
+    localStorage.setItem('alfathpulsa_settings', JSON.stringify(newSettings));
     setData(prev => ({ ...prev, ...processedData }));
   };
 
@@ -413,9 +414,9 @@ export default function App() {
 
     // Save locally first
     try {
-      const localHistory = JSON.parse(localStorage.getItem('alfathprint_history') || '[]');
+      const localHistory = JSON.parse(localStorage.getItem('alfathpulsa_history') || localStorage.getItem('alfathprint_history') || '[]');
       const newHistory = [entry, ...localHistory].slice(0, 50);
-      localStorage.setItem('alfathprint_history', JSON.stringify(newHistory));
+      localStorage.setItem('alfathpulsa_history', JSON.stringify(newHistory));
       
       // Update state immediately for everyone
       setHistory(newHistory);
@@ -1238,14 +1239,30 @@ export default function App() {
                       <CreditCard className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Biaya Admin</p>
-                      <p className="text-[9px] text-slate-400 font-medium tracking-tight">Tampilkan baris biaya admin</p>
+                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Admin Fee</p>
+                      <p className="text-[9px] text-slate-400 font-medium tracking-tight">Show admin fee row on receipt</p>
                     </div>
                   </div>
                   <div className={`w-12 h-6 rounded-full relative transition-colors ${data.showAdminFee ? 'bg-emerald-500' : 'bg-slate-200'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${data.showAdminFee ? 'left-7' : 'left-1'}`}></div>
                   </div>
                 </div>
+
+                {data.showAdminFee && (
+                  <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Admin Fee Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                      <input 
+                        type="number"
+                        value={data.admin || 0}
+                        onChange={(e) => saveSettings({ admin: parseInt(e.target.value || '0', 10) })}
+                        className="w-full bg-white border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-4 px-2">
                   <button 

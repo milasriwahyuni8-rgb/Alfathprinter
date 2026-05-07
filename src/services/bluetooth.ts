@@ -63,7 +63,9 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
            return l + (spaces > 0 ? " ".repeat(spaces) : " ") + v;
         };
         
-        steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff), line(''));
+                 if (data.showStoreName) {
+            steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff), line(''));
+         }
         steps.push(u(esc.left), line(lv('TANGGAL', data.tanggal)));
         steps.push(line(lv('WAKTU', data.waktu)));
         steps.push(line('--------------------------------'));
@@ -77,10 +79,13 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         steps.push(line('--------------------------------'));
         
         steps.push(line(lv('NOMINAL', `RP ${data.nominal.toLocaleString('id-ID')}`)));
-        steps.push(line(lv('ADMIN', `RP ${data.admin.toLocaleString('id-ID')}`)));
+                 if (data.showAdminFee) {
+            steps.push(line(lv('ADMIN FEE', `RP ${data.admin.toLocaleString('id-ID')}`)));
+         }
         steps.push(line('--------------------------------'));
         
-        steps.push(u(esc.bold), line(lv('TOTAL', `RP ${(data.nominal + data.admin).toLocaleString('id-ID')}`)), u(esc.boldOff));
+                 const totalCalculated = data.nominal + (data.showAdminFee ? data.admin : 0);
+         steps.push(u(esc.bold), line(lv('TOTAL', `RP ${totalCalculated.toLocaleString('id-ID')}`)), u(esc.boldOff));
         steps.push(line('--------------------------------'));
         steps.push(line(' '));
         steps.push(line('--------------------------------'));
@@ -89,7 +94,9 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         steps.push(line('SALINAN - VIA ALFATHPULSA APP'));
         steps.push(line('TERIMA KASIH'));
      } else {
-        steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff));
+                 if (data.showStoreName) {
+            steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff));
+         }
         
         if (layout === 'elegant') {
            steps.push(line('--- OFFICIAL RECEIPT ---'), line(''));
@@ -129,9 +136,12 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         }
         
         steps.push(line('--------------------------------'));
-        steps.push(line(`NOMINAL : Rp ${data.nominal.toLocaleString('id-ID')}`));
-        steps.push(line(`ADMIN   : Rp ${data.admin.toLocaleString('id-ID')}`));
-        steps.push(u(esc.bold), line(`TOTAL   : Rp ${(data.nominal + data.admin).toLocaleString('id-ID')}`), u(esc.boldOff));
+                 steps.push(line(`NOMINAL   : Rp ${data.nominal.toLocaleString('id-ID')}`));
+                 if (data.showAdminFee) {
+            steps.push(line(`ADMIN FEE : Rp ${data.admin.toLocaleString('id-ID')}`));
+         }
+                 const totalCombined = data.nominal + (data.showAdminFee ? data.admin : 0);
+         steps.push(u(esc.bold), line(`TOTAL     : Rp ${totalCombined.toLocaleString('id-ID')}`), u(esc.boldOff));
         steps.push(line('================================'));
 
         steps.push(u(esc.center), line(''));

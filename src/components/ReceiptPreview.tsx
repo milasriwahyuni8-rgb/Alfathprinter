@@ -136,14 +136,14 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
           <InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="right" />
         </div>
       </div>
-      {data.showAdminFee && (
-        <div className="flex justify-between items-center gap-1 py-0.25">
-          <span className="shrink-0 select-none text-[10px] opacity-70">ADMIN</span>
-          <div className="flex-1 font-mono text-xs">
-            <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" />
+        {data.showAdminFee && (
+          <div className="flex justify-between items-center gap-1 py-0.25">
+            <span className="shrink-0 select-none text-[10px] opacity-70 uppercase">ADMIN FEE</span>
+            <div className="flex-1 font-mono text-xs">
+              <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div className="text-center my-0.25 select-none font-bold text-xs opacity-40">
         {'=' .repeat(32)}
@@ -240,7 +240,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
          </div>
          {data.showAdminFee && (
            <div className="w-full flex justify-between text-[10px] items-center mb-1">
-             <span className="opacity-60 uppercase">ADMIN</span>
+             <span className="opacity-60 uppercase">ADMIN FEE</span>
              <div className="w-24"><InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" /></div>
            </div>
          )}
@@ -434,14 +434,14 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
 
       <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-2 mb-6">
         <div className="flex justify-between items-center text-[11px]">
-          <span className="opacity-60">Amount</span>
+          <span className="opacity-60 uppercase">NOMINAL</span>
           <div className="w-24">
             <InlineCurrencyInput value={data.nominal} label="Nominal" keyName="nominal" align="right" />
           </div>
         </div>
         {data.showAdminFee && (
           <div className="flex justify-between items-center text-[11px]">
-            <span className="opacity-60">Service Fee</span>
+            <span className="opacity-60 uppercase">ADMIN FEE</span>
             <div className="w-24">
               <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" />
             </div>
@@ -540,7 +540,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       </div>
       {data.showAdminFee && (
         <div className="flex justify-between items-center gap-2 mb-1">
-          <span className="shrink-0 font-bold">ADMIN</span>
+          <span className="shrink-0 font-bold uppercase">ADMIN FEE</span>
           <div className="flex-1">
             <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" />
           </div>
@@ -649,7 +649,7 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
         </div>
         {data.showAdminFee && (
           <div className="flex justify-between font-bold uppercase text-[12px]">
-            <span className="select-none opacity-90">ADMIN</span>
+            <span className="select-none opacity-90">ADMIN FEE</span>
             <div className="w-28 text-right">
                <InlineCurrencyInput value={data.admin || 0} label="Admin" keyName="admin" align="right" isBold />
             </div>
