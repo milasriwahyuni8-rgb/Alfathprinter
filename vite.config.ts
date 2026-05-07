@@ -14,8 +14,8 @@ export default defineConfig(({mode}) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'mask-icon.svg'],
         manifest: {
-          name: 'Alfathprint - Thermal Receipt Printer',
-          short_name: 'Alfathprint',
+          name: 'AlfathPulsa - Digital Struk Solution',
+          short_name: 'AlfathPulsa',
           description: 'Cetak bukti transfer jadi struk thermal otomatis.',
           theme_color: '#4f46e5',
           background_color: '#f2f4f7',

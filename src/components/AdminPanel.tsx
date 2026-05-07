@@ -125,7 +125,7 @@ export function AdminPanel() {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lokasi</label>
                   <input 
                     type="text" 
-                    placeholder="Contoh: Alfathprint Cabang Garut" 
+                    placeholder="Contoh: AlfathPulsa Cabang Garut" 
                     value={newBranchName}
                     onChange={e => setNewBranchName(e.target.value)}
                     className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:bg-white outline-none transition-all"

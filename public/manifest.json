@@ -1,6 +1,6 @@
 {
-  "name": "Alfathprint",
-  "short_name": "Alfathprint",
+  "name": "AlfathPulsa",
+  "short_name": "AlfathPulsa",
   "description": "Ekstrak data transaksi & cetak struk otomatis.",
   "start_url": "/",
   "display": "standalone",

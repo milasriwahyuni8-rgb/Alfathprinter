@@ -1,6 +1,6 @@
 {
-  "name": "Alfathprint",
-  "description": "Ekstrak data dari screenshot transaksi dan cetak struk thermal otomatis.",
+  "name": "AlfathPulsa",
+  "description": "Ekstrak data dari screenshot transaksi dan cetak struk thermal otomatis dengan AI Alfath.",
   "requestFramePermissions": [
     "bluetooth",
     "web-share"
