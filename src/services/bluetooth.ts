@@ -86,7 +86,7 @@ export const printViaBluetooth = async (data: ReceiptData, layout: string = 'sta
         steps.push(line('--------------------------------'));
         
         steps.push(u(esc.center), line('** TRANSAKSI BERHASIL **'));
-        steps.push(line('SALINAN - VIA ALFATHTRF APP'));
+        steps.push(line('SALINAN - VIA ALFATHPULSA APP'));
         steps.push(line('TERIMA KASIH'));
      } else {
         steps.push(u(esc.center), u(esc.bold), line(data.namaToko), u(esc.boldOff));

@@ -1411,6 +1411,7 @@ export default function App() {
                         data={data} 
                         onChange={setData} 
                         layout={activeLayout}
+                        logoType={logoType}
                       />
                     </div>
                   </motion.div>
@@ -1523,7 +1524,7 @@ export default function App() {
 
       {/* Print Only Container */}
       <div className="hidden print:flex print:absolute print:inset-0 print:items-start print:justify-start">
-         <ReceiptPreview data={data} onChange={() => {}} layout={activeLayout} />
+         <ReceiptPreview data={data} onChange={() => {}} layout={activeLayout} logoType={logoType} />
       </div>
     </div>
   );

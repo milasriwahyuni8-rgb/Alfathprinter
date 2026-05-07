@@ -9,6 +9,7 @@ interface ReceiptPreviewProps {
   fontFamily?: string;
   className?: string;
   layout?: 'standard' | 'modern' | 'bank' | 'elegant' | 'pro' | 'digital';
+  logoType?: 'full' | 'text' | 'none';
 }
 
 interface EditingField {
@@ -18,7 +19,7 @@ interface EditingField {
   type: 'text' | 'number' | 'date' | 'time';
 }
 
-export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewProps>(({ data, onChange, fontFamily = 'monospace', className = '', layout = 'standard' }, ref) => {
+export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewProps>(({ data, onChange, fontFamily = 'monospace', className = '', layout = 'standard', logoType = 'full' }, ref) => {
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const total = data.nominal + (data.showAdminFee ? (data.admin || 0) : 0);
 
@@ -811,7 +812,34 @@ export const ReceiptPreview = React.forwardRef<HTMLDivElement, ReceiptPreviewPro
       >
         <div className="p-4 md:p-5 pb-6">
           <div className="receipt-content flex flex-col gap-0.5 relative z-10 bg-white">
-          {data.logoUrl && (
+          
+          {/* Logo Section */}
+          {logoType !== 'none' && (
+            <div className="flex flex-col items-center mb-4 pt-2">
+              {logoType === 'full' && (
+                <div className="mb-2 relative">
+                   <div className="w-12 h-12 border-2 border-black rounded-lg flex items-center justify-center relative">
+                      <div className="text-black transform -rotate-12">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                      </div>
+                      <div className="absolute -top-1 -right-1 bg-white">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="black" stroke="black" strokeWidth="1"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                      </div>
+                   </div>
+                </div>
+              )}
+              <div className="text-center">
+                <h1 className="text-xl font-bold tracking-tighter leading-none text-black">
+                  ALFATH<span className="opacity-50">PULSA</span>
+                </h1>
+                {logoType === 'full' && (
+                  <p className="text-[8px] font-bold uppercase tracking-[0.2em] mt-1 opacity-40">Digital Payment</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {data.logoUrl && logoType === 'none' && (
             <div className="flex justify-center mb-4 no-print-logo">
               <img src={data.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
             </div>
