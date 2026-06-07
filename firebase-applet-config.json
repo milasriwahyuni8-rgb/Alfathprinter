@@ -1,10 +1,34 @@
 {
-  "projectId": "gen-lang-client-0171119021",
-  "appId": "1:597178170037:web:2f10cc2aa63c7e2afc1cfc",
-  "apiKey": "AIzaSyAV7MUIIfSeCEWCA-b84D2fdAucx_EnpDY",
-  "authDomain": "gen-lang-client-0171119021.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-7390f3bf-0f50-4c77-82b1-2d163cbdf5c6",
-  "storageBucket": "gen-lang-client-0171119021.firebasestorage.app",
-  "messagingSenderId": "597178170037",
-  "measurementId": ""
+  "type": "GoogleCloud",
+  "projectId": "alfathpulsa",
+  "storageBucket": "alfathpulsa.appspot.com",
+  "apiVersion": "v1",
+  "appId": "7390f3bf-0f50-4c77-82b1-2d163cbdf5c6",
+  "deploymentTarget": "vercel",
+  "gitIntegration": {
+    "enabled": true,
+    "autoSync": true,
+    "syncBranch": "main",
+    "deploymentBranch": "main"
+  },
+  "buildConfig": {
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "nodeVersion": "18",
+    "installCommand": "npm install"
+  },
+  "environment": {
+    "development": {
+      "apiUrl": "http://localhost:3000"
+    },
+    "production": {
+      "apiUrl": "https://alfathprinter.vercel.app"
+    }
+  },
+  "features": {
+    "webShareTarget": true,
+    "pwa": true,
+    "bluetooth": true,
+    "serviceWorker": true
+  }
 }
